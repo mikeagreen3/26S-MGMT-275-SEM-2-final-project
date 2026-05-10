@@ -63,3 +63,5 @@ opinions from smart-home enthusiasts who aren't STR hosts.
 - Verbatim quotes feed the Customer FAQ in `prfaq.md` ("Why this product?")
 - Quotes can supplement the UX appendix as anonymous "voice of the host" alongside real interviews
 - Frequency + intensity numbers settle the hero-feature question
+
+**Findings:** [`q1-reddit-host-pain-points-findings.md`](./q1-reddit-host-pain-points-findings.md) — Perplexity output, 2026-05-10. Headline: B is 1.5-2x more discussed; A is more emotionally intense; the strongest framing combines both because B converts to A when code management fails at check-in.
