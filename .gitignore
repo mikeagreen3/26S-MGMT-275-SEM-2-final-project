@@ -41,9 +41,7 @@ venv/
 # distributed in-class, etc.)
 _assignment-refs/
 
-# Raw interview material with PII (names, recordings, contact info).
-# Only anonymized synthesis goes in interviews/ root.
-interviews/raw/
+# Interview audio (synthetic-persona transcripts are committed under interviews/raw/)
 interviews/recordings/
 interviews/*.mp3
 interviews/*.mp4
