@@ -1,0 +1,2648 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schlage AI Access Concierge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+
+// ===== data.js =====
+// Shared sample data for the AI Access Concierge prototype.
+// Mutating these arrays is fine — state lives in React.
+
+window.INITIAL_PROPERTIES = [
+  {
+    id: "lock_001",
+    name: "Beachside Studio",
+    address: "412 Ocean View Dr, Santa Monica, CA",
+    lockName: "Front Door Encode",
+    lockModel: "Schlage Encode Wi-Fi Deadbolt",
+    battery: 12,
+    connectivity: "Online",
+    codeSync: "Synced",
+    status: "At Risk",
+    nextCheckIn: {
+      guest: "Sarah K.",
+      label: "Tomorrow 3:00 PM",
+      hoursAway: 18,
+      iso: "2026-05-11T15:00:00",
+    },
+    alert: {
+      title: "Action Required Before Check-in",
+      body: "Battery is critically low at 12%. At this level, the lock may fail to respond during your guest's check-in tomorrow at 3:00 PM.",
+    },
+  },
+  {
+    id: "lock_002",
+    name: "Downtown Loft",
+    address: "88 Spring St #4B, New York, NY",
+    lockName: "Main Entry Encode Plus",
+    lockModel: "Schlage Encode Plus Smart Deadbolt",
+    battery: 78,
+    connectivity: "Online",
+    codeSync: "Synced",
+    status: "All Clear",
+    nextCheckIn: {
+      guest: "James M.",
+      label: "Friday 4:00 PM",
+      hoursAway: 96,
+      iso: "2026-05-15T16:00:00",
+    },
+    alert: null,
+  },
+  {
+    id: "lock_003",
+    name: "Mountain Cabin",
+    address: "27 Pine Ridge Rd, Big Bear, CA",
+    lockName: "Cabin Door Encode",
+    lockModel: "Schlage Encode Wi-Fi Deadbolt",
+    battery: 45,
+    connectivity: "Offline",
+    codeSync: "Pending",
+    status: "Offline",
+    nextCheckIn: {
+      guest: "Priya R.",
+      label: "Saturday 2:00 PM",
+      hoursAway: 120,
+      iso: "2026-05-16T14:00:00",
+    },
+    alert: {
+      title: "Lock Unreachable",
+      body: "We haven't heard from this lock in 6 hours. Codes pushed in this window have not synced. Your guest's check-in is Saturday at 2:00 PM.",
+    },
+  },
+];
+
+// 7-day battery history per lock (oldest -> newest, today is last)
+window.BATTERY_HISTORY = {
+  lock_001: [68, 54, 42, 33, 25, 18, 12],
+  lock_002: [92, 90, 88, 85, 83, 80, 78],
+  lock_003: [60, 58, 55, 52, 50, 47, 45],
+};
+
+window.INITIAL_ACCESS_CODES = [
+  {
+    id: "c01",
+    name: "Sarah K. — Guest",
+    type: "Guest",
+    lockId: "lock_001",
+    lockName: "Front Door Encode",
+    validFrom: "May 11, 3:00 PM",
+    validUntil: "May 14, 11:00 AM",
+    status: "Pending",
+  },
+  {
+    id: "c02",
+    name: "Luz — Cleaning",
+    type: "Cleaner",
+    lockId: "lock_002",
+    lockName: "Main Entry Encode Plus",
+    validFrom: "May 10, 11:00 AM",
+    validUntil: "May 10, 2:00 PM",
+    status: "Active",
+  },
+  {
+    id: "c03",
+    name: "James M. — Guest",
+    type: "Guest",
+    lockId: "lock_002",
+    lockName: "Main Entry Encode Plus",
+    validFrom: "May 15, 4:00 PM",
+    validUntil: "May 18, 11:00 AM",
+    status: "Pending",
+  },
+  {
+    id: "c04",
+    name: "HVAC Service",
+    type: "Contractor",
+    lockId: "lock_003",
+    lockName: "Cabin Door Encode",
+    validFrom: "May 5, 9:00 AM",
+    validUntil: "May 5, 12:00 PM",
+    status: "Expired",
+  },
+];
+
+window.HEALTH_CHECK_HISTORY = {
+  lock_001: [
+    { ts: "Today, 11:42 AM", outcome: "Battery low (12%)", tone: "bad" },
+    { ts: "Today, 7:42 AM",  outcome: "Battery low (14%)", tone: "bad" },
+    { ts: "Yesterday, 11:42 PM", outcome: "Battery low (17%)", tone: "warn" },
+    { ts: "Yesterday, 7:42 PM",  outcome: "Battery low (20%)", tone: "warn" },
+    { ts: "Yesterday, 3:42 PM",  outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 11:42 AM", outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 7:42 AM",  outcome: "All systems nominal", tone: "good" },
+  ],
+  lock_002: [
+    { ts: "Today, 11:30 AM", outcome: "All systems nominal", tone: "good" },
+    { ts: "Today, 7:30 AM",  outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 11:30 PM", outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 7:30 PM",  outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 3:30 PM",  outcome: "Code synced successfully", tone: "good" },
+    { ts: "Yesterday, 11:30 AM", outcome: "All systems nominal", tone: "good" },
+  ],
+  lock_003: [
+    { ts: "Today, 6:00 AM",  outcome: "No response from lock", tone: "bad" },
+    { ts: "Today, 2:00 AM",  outcome: "No response from lock", tone: "bad" },
+    { ts: "Yesterday, 10:00 PM", outcome: "Code push pending", tone: "warn" },
+    { ts: "Yesterday, 6:00 PM",  outcome: "Code push pending", tone: "warn" },
+    { ts: "Yesterday, 2:00 PM",  outcome: "All systems nominal", tone: "good" },
+    { ts: "Yesterday, 10:00 AM", outcome: "All systems nominal", tone: "good" },
+  ],
+};
+
+window.CHECKIN_HISTORY = {
+  lock_001: [
+    { guest: "Dana P.", date: "May 5", status: "Successful" },
+    { guest: "Ravi S.", date: "Apr 28", status: "Successful" },
+    { guest: "Kim L.", date: "Apr 22", status: "Failed" },
+    { guest: "Tom W.", date: "Apr 15", status: "Successful" },
+    { guest: "Aria N.", date: "Apr 8", status: "Successful" },
+  ],
+  lock_002: [
+    { guest: "Mei T.", date: "May 3", status: "Successful" },
+    { guest: "Owen B.", date: "Apr 26", status: "Successful" },
+    { guest: "Ines G.", date: "Apr 18", status: "Successful" },
+    { guest: "Carl V.", date: "Apr 10", status: "Successful" },
+    { guest: "Lin H.", date: "Apr 2", status: "Successful" },
+  ],
+  lock_003: [
+    { guest: "Marco R.", date: "Apr 30", status: "Successful" },
+    { guest: "Eva K.", date: "Apr 20", status: "No Data" },
+    { guest: "Sven J.", date: "Apr 12", status: "Successful" },
+    { guest: "Nora P.", date: "Apr 3", status: "Successful" },
+    { guest: "Otto F.", date: "Mar 27", status: "Successful" },
+  ],
+};
+
+
+// ===== components.jsx =====
+// Shared UI primitives: icons, badges, nav, modals.
+
+const Icon = ({ name, className = "w-5 h-5", strokeWidth = 1.8 }) => {
+  const props = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  switch (name) {
+    case "home":
+      return (<svg {...props}><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>);
+    case "calendar":
+      return (<svg {...props}><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>);
+    case "building":
+      return (<svg {...props}><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2"/></svg>);
+    case "gear":
+      return (<svg {...props}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>);
+    case "battery":
+      return (<svg {...props}><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2"/></svg>);
+    case "wifi":
+      return (<svg {...props}><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/><path d="M2 9a14 14 0 0 1 20 0"/></svg>);
+    case "wifi-off":
+      return (<svg {...props}><path d="M3 3l18 18"/><path d="M5 12.5a10 10 0 0 1 4-2.9"/><path d="M16 10a10 10 0 0 1 3 2.5"/><path d="M8.5 16a5 5 0 0 1 6-1"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></svg>);
+    case "sync":
+      return (<svg {...props}><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>);
+    case "arrow-left":
+      return (<svg {...props}><path d="M15 18l-6-6 6-6"/></svg>);
+    case "alert":
+      return (<svg {...props}><path d="M12 3l10 17H2L12 3z"/><path d="M12 10v4M12 17.5v.5"/></svg>);
+    case "check":
+      return (<svg {...props}><path d="M5 12l5 5L20 7"/></svg>);
+    case "lock":
+      return (<svg {...props}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>);
+    case "spark":
+      return (<svg {...props}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>);
+    case "x":
+      return (<svg {...props}><path d="M6 6l12 12M18 6L6 18"/></svg>);
+    case "plus":
+      return (<svg {...props}><path d="M12 5v14M5 12h14"/></svg>);
+    case "clock":
+      return (<svg {...props}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>);
+    case "user":
+      return (<svg {...props}><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>);
+    case "moon":
+      return (<svg {...props}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>);
+    case "calendar-clock":
+      return (<svg {...props}><rect x="3" y="5" width="13" height="15" rx="2"/><path d="M3 10h13M8 3v4M14 3v4"/><circle cx="18" cy="16" r="4"/><path d="M18 14.5V16l1 1"/></svg>);
+    case "pin":
+      return (<svg {...props}><path d="M12 21s-7-7.5-7-12a7 7 0 1 1 14 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>);
+    default:
+      return null;
+  }
+};
+
+const StatusBadge = ({ status, size = "md" }) => {
+  const map = {
+    "All Clear":      { bg: "#16a34a", dot: "#bbf7d0" },
+    "At Risk":        { bg: "#d97706", dot: "#fed7aa" },
+    "Offline":        { bg: "#dc2626", dot: "#fecaca" },
+    "Action Pending":   { bg: "#2563eb", dot: "#bfdbfe" },
+    "Action Scheduled": { bg: "#2563eb", dot: "#bfdbfe" },
+    "Active":     { bg: "#16a34a", dot: "#bbf7d0" },
+    "Pending":    { bg: "#d97706", dot: "#fed7aa" },
+    "Expired":    { bg: "#64748b", dot: "#cbd5e1" },
+    "Successful": { bg: "#16a34a", dot: "#bbf7d0" },
+    "Failed":     { bg: "#dc2626", dot: "#fecaca" },
+    "No Data":    { bg: "#64748b", dot: "#cbd5e1" },
+  };
+  const s = map[status] || map["No Data"];
+  const pad = size === "lg" ? "px-3 py-1 text-xs" : "px-2.5 py-0.5 text-[11px]";
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold uppercase tracking-wide text-white ${pad}`}
+      style={{ backgroundColor: s.bg, letterSpacing: "0.04em" }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.dot }}></span>
+      {status}
+    </span>
+  );
+};
+
+const Card = ({ children, className = "", onClick, style }) => (
+  <div
+    onClick={onClick}
+    style={style}
+    className={`bg-white rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_-2px_rgba(15,23,42,0.05)] ${className}`}
+  >
+    {children}
+  </div>
+);
+
+const Button = ({ children, variant = "primary", size = "md", onClick, disabled, className = "", icon }) => {
+  const sizes = { sm: "px-3 py-1.5 text-sm", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-sm" };
+  const variants = {
+    primary: "bg-[#1a1a2e] text-white hover:bg-[#2a2a44] disabled:bg-slate-300",
+    secondary: "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 disabled:opacity-60",
+    danger: "bg-[#dc2626] text-white hover:bg-[#b91c1c]",
+    success: "bg-[#16a34a] text-white hover:bg-[#15803d]",
+    ghost: "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+  };
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:cursor-not-allowed ${sizes[size]} ${variants[variant]} ${className}`}
+    >
+      {icon && <Icon name={icon} className="w-4 h-4" />}
+      {children}
+    </button>
+  );
+};
+
+const Modal = ({ open, onClose, title, children, footer }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <h3 className="font-semibold text-slate-900">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><Icon name="x" className="w-5 h-5" /></button>
+        </div>
+        <div className="px-5 py-4 text-sm text-slate-700">{children}</div>
+        {footer && <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">{footer}</div>}
+      </div>
+    </div>
+  );
+};
+
+const batteryTone = (b) => (b < 20 ? "bad" : b < 40 ? "warn" : "good");
+const connTone = (c) => (c === "Online" ? "good" : "bad");
+const syncTone = (s) => (s === "Synced" ? "good" : s === "Pending" ? "warn" : "bad");
+
+Object.assign(window, { Icon, StatusBadge, Card, Button, Modal, batteryTone, connTone, syncTone });
+
+
+// ===== nav.jsx =====
+// Top navigation bar.
+
+const TopNav = ({ active, onNavigate, hostName }) => {
+  const items = [
+    { id: "dashboard", label: "Dashboard", icon: "home" },
+    { id: "schedule",  label: "Schedule Access", icon: "calendar" },
+    { id: "properties", label: "Properties", icon: "building" },
+    { id: "settings",  label: "Settings", icon: "gear" },
+  ];
+  return (
+    <nav className="bg-[#1a1a2e] text-white" data-screen-label="00 Nav">
+      <div className="max-w-[1200px] mx-auto px-8 h-16 flex items-center justify-between">
+        <button
+          onClick={() => onNavigate("dashboard")}
+          className="flex items-center gap-3 group"
+        >
+          <div className="w-9 h-9 rounded-md bg-[#B81F2D] grid place-items-center">
+            <Icon name="lock" className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left leading-tight">
+            <div
+              className="text-[15px] font-bold uppercase tracking-[0.08em] text-[#B81F2D]"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              SCHLAGE
+            </div>
+            <div className="text-xs text-white/70 mt-0.5">AI Access Concierge</div>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-1">
+          {items.map((it) => {
+            const isActive = active === it.id || (it.id === "properties" && active === "lockDetails");
+            return (
+              <button
+                key={it.id}
+                onClick={() => onNavigate(it.id)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-sm transition ${
+                  isActive ? "bg-white/15 text-white" : "text-white/70 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Icon name={it.icon} className="w-4 h-4" />
+                {it.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="text-right text-xs">
+            <div className="text-white/50">Signed in</div>
+            <div className="text-white/90 font-medium">{hostName}</div>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-300 to-rose-400 grid place-items-center text-[#1a1a2e] font-semibold text-sm">
+            {hostName.split(" ").map(w => w[0]).join("")}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+window.TopNav = TopNav;
+
+
+// ===== dashboard.jsx =====
+// Dashboard screen: alert banner + property cards.
+
+const SignalRow = ({ icon, label, value, tone }) => {
+  const toneClass = {
+    good: "text-[#16a34a]",
+    warn: "text-[#d97706]",
+    bad:  "text-[#dc2626]",
+    mute: "text-slate-500",
+  }[tone] || "text-slate-700";
+  return (
+    <div className="flex items-center justify-between py-2.5 px-3 rounded-md bg-slate-50/70 border border-slate-100">
+      <div className="flex items-center gap-2 text-xs text-slate-600">
+        <Icon name={icon} className={`w-4 h-4 ${toneClass}`} strokeWidth={2} />
+        {label}
+      </div>
+      <div className={`text-xs font-semibold ${toneClass}`}>{value}</div>
+    </div>
+  );
+};
+
+// Labels and ago-formatter for the "Action Pending" surface.
+const PENDING_LABELS = {
+  notify_cohost:   "Co-host notified",
+  replace_battery: "Battery replacement requested",
+  contact_support: "Support ticket open",
+};
+const SCHEDULED_LABELS = {
+  notify_cohost:   "Co-host notification scheduled",
+  replace_battery: "Battery replacement",
+  contact_support: "Support call scheduled",
+  refresh_code:    "Code refresh scheduled",
+};
+const formatTimeAgo = (ts) => {
+  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (sec < 30) return "Just now";
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+};
+const formatTimeUntil = (ts) => {
+  const sec = Math.max(0, Math.floor((ts - Date.now()) / 1000));
+  if (sec < 60) return "in under a minute";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `in ${min} min`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `in ${hr} hour${hr === 1 ? "" : "s"}`;
+  const d = Math.floor(hr / 24);
+  return `in ${d} day${d === 1 ? "" : "s"}`;
+};
+const formatScheduledLabel = (ts) => {
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (sameDay) return `today by ${time}`;
+  if (isTomorrow) return `tomorrow by ${time}`;
+  return `${d.toLocaleDateString("en-US", { weekday: "short" })} by ${time}`;
+};
+// Default "I'll do it by..." picker value: 4 hours before next check-in,
+// or 4 hours from now if that's already past — formatted for <input type="datetime-local">.
+const defaultScheduleIso = (p) => {
+  const checkIn = p.nextCheckIn?.iso ? new Date(p.nextCheckIn.iso) : null;
+  let target = checkIn ? new Date(checkIn.getTime() - 4 * 3600 * 1000) : null;
+  if (!target || target.getTime() < Date.now() + 30 * 60 * 1000) {
+    target = new Date(Date.now() + 4 * 3600 * 1000);
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${target.getFullYear()}-${pad(target.getMonth()+1)}-${pad(target.getDate())}T${pad(target.getHours())}:${pad(target.getMinutes())}`;
+};
+const SNOOZE_PRESETS = [
+  { key: "1h",       label: "In 1 hour",        ms: 1 * 3600 * 1000 },
+  { key: "4h",       label: "In 4 hours",       ms: 4 * 3600 * 1000 },
+  { key: "morning",  label: "Tomorrow morning", at: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); return d.getTime(); } },
+];
+
+const PropertyCard = ({ property, onView, onRefreshOnCard, onMarkResolved, onMarkComplete, onResolveNow }) => {
+  const p = property;
+  // Local refresh state: idle | refreshing | success
+  const [refreshState, setRefreshState] = React.useState("idle");
+  // Tick once per minute so the "X min ago / in X hours" label stays fresh.
+  const [, forceTick] = React.useState(0);
+  React.useEffect(() => {
+    if (p.status === "All Clear" && !p.snooze) return;
+    const id = setInterval(() => forceTick((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, [p.status, !!p.snooze]);
+
+  const handleRefresh = (e) => {
+    e.stopPropagation();
+    setRefreshState("refreshing");
+    setTimeout(() => {
+      setRefreshState("success");
+      onRefreshOnCard(p.id); // flips status to All Clear in app state
+      setTimeout(() => setRefreshState("idle"), 3000);
+    }, 2000);
+  };
+
+  const status = p.status;
+  const isAllClear        = status === "All Clear";
+  const isOffline         = status === "Offline";
+  const isActionPending   = status === "Action Pending";
+  const isActionScheduled = status === "Action Scheduled";
+  const snoozed = !!p.snooze;
+  const pending   = p.pendingAction;
+  const scheduled = p.scheduledAction;
+  const snooze    = p.snooze;
+
+  // Snoozed cards keep their underlying At Risk / Offline status color but get a softer treatment.
+  const cardSoftClass  = snoozed ? "opacity-80" : "";
+  const badgeSoftStyle = snoozed ? { opacity: 0.5 } : null;
+
+  return (
+    <Card className={`p-5 flex flex-col gap-4 transition hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.12)] ${cardSoftClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <Icon name="pin" className="w-3.5 h-3.5" />
+            <span className="truncate">{p.address}</span>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 leading-tight">{p.name}</h3>
+          <div className="text-xs text-slate-500 mt-1">{p.lockName}</div>
+        </div>
+        <span style={badgeSoftStyle}><StatusBadge status={status} /></span>
+      </div>
+
+      {/* State-specific sub-label */}
+      {snoozed && (
+        <div className="-mt-2 -mb-1 flex items-center gap-1.5 text-xs text-slate-600">
+          <Icon name="moon" className="w-3.5 h-3.5 text-slate-500" strokeWidth={2}/>
+          <span className="font-medium">Reminder set</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">{formatTimeUntil(snooze.until)}</span>
+        </div>
+      )}
+      {!snoozed && isActionPending && pending && (
+        <div className="-mt-2 -mb-1 flex items-center gap-1.5 text-xs text-[#2563eb]">
+          <Icon name="user" className="w-3.5 h-3.5" strokeWidth={2}/>
+          <span className="font-medium">{PENDING_LABELS[pending.key] || "Action taken"}</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">{formatTimeAgo(pending.takenAt)}</span>
+        </div>
+      )}
+      {!snoozed && isActionScheduled && scheduled && (
+        <div className="-mt-2 -mb-1 flex items-center gap-1.5 text-xs text-[#2563eb]">
+          <Icon name="clock" className="w-3.5 h-3.5" strokeWidth={2}/>
+          <span className="font-medium">{SCHEDULED_LABELS[scheduled.key] || "Action scheduled"}</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">{formatScheduledLabel(scheduled.dueAt)}</span>
+        </div>
+      )}
+
+      <div className="border-t border-dashed border-slate-200" />
+
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5">Next Check-in</div>
+        <div className="flex items-center gap-2 text-sm text-slate-800">
+          <Icon name="user" className="w-4 h-4 text-slate-400" />
+          <span className="font-medium">{p.nextCheckIn.guest}</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-600">{p.nextCheckIn.label}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-1.5">
+        <SignalRow icon="battery" label="Battery" value={`${p.battery}%`} tone={batteryTone(p.battery)} />
+        <SignalRow icon={p.connectivity === "Online" ? "wifi" : "wifi-off"} label="Connectivity" value={p.connectivity} tone={connTone(p.connectivity)} />
+        <SignalRow icon="sync" label="Code Sync" value={p.codeSync} tone={syncTone(p.codeSync)} />
+      </div>
+
+      {/* Inline refresh feedback states (At Risk / Offline only) */}
+      {refreshState === "refreshing" && (
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 flex items-center gap-2">
+          <Icon name="sync" className="w-4 h-4 text-slate-500 animate-spin" strokeWidth={2}/>
+          <span className="text-sm text-slate-700">Pushing fresh code to the lock…</span>
+        </div>
+      )}
+      {refreshState === "success" && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-start gap-2">
+          <Icon name="check" className="w-4 h-4 text-[#16a34a] mt-0.5" strokeWidth={2.5}/>
+          <span className="text-sm text-emerald-900 leading-snug">Code refreshed. {p.nextCheckIn.guest} is good to go. We'll keep monitoring.</span>
+        </div>
+      )}
+
+      {/* Status-aware action buttons */}
+      {refreshState === "idle" && (
+        <div className="flex gap-2 pt-1">
+          {snoozed ? (
+            <>
+              <Button variant="primary" className="flex-1" onClick={() => onResolveNow(p.id)} icon="alert">Resolve now</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => onView(p.id)}>View details</Button>
+            </>
+          ) : isAllClear ? (
+            <Button variant="secondary" className="flex-1" onClick={() => onView(p.id)}>View details</Button>
+          ) : isActionPending ? (
+            <>
+              <Button variant="secondary" className="flex-1" onClick={() => onView(p.id)}>View status</Button>
+              <Button variant="primary" className="flex-1" onClick={() => onMarkResolved(p.id)} icon="check">Mark resolved</Button>
+            </>
+          ) : isActionScheduled ? (
+            <>
+              <Button variant="secondary" className="flex-1" onClick={() => onMarkComplete(p.id)} icon="check">Mark complete</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => onView(p.id)}>View details</Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant={isOffline ? "danger" : "primary"}
+                className="flex-1"
+                onClick={handleRefresh}
+                icon="sync"
+              >
+                Refresh code
+              </Button>
+              <Button variant="secondary" className="flex-1" onClick={() => onView(p.id)}>View details</Button>
+            </>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+};
+
+const AlertBanner = ({ alerts, onResolve }) => {
+  if (!alerts.length) return null;
+  const tone = alerts.some(a => a.status === "Offline") ? "red" : "amber";
+  const bg = tone === "red" ? "bg-[#fef2f2] border-[#fecaca]" : "bg-[#fffbeb] border-[#fde68a]";
+  const iconColor = tone === "red" ? "text-[#dc2626]" : "text-[#d97706]";
+  return (
+    <div className={`rounded-lg border ${bg} px-5 py-4`}>
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 ${iconColor}`}><Icon name="alert" className="w-5 h-5" strokeWidth={2}/></div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-900">
+            {alerts.length === 1
+              ? `${alerts[0].name}: ${alerts[0].alert.title}`
+              : `${alerts.length} locks need attention before check-in`}
+          </div>
+          <div className="text-sm text-slate-700 mt-0.5">
+            {alerts.length === 1
+              ? alerts[0].alert.body
+              : alerts.map(a => a.name).join(" · ")}
+          </div>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          {alerts.length === 1 ? (
+            <Button variant={tone === "red" ? "danger" : "primary"} size="sm" onClick={() => onResolve(alerts[0].id)}>
+              Resolve
+            </Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={() => onResolve(alerts[0].id)}>
+              Review {alerts.length} alerts
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Dashboard = ({ properties, hostName, today, onView, onResolve, onRefreshOnCard, onMarkResolved, onMarkComplete, onResolveNow, onSchedule }) => {
+  const alerts = properties.filter(p => p.alert);
+  return (
+    <div className="space-y-6" data-screen-label="01 Dashboard">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <div className="text-sm text-slate-500">{today}</div>
+          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Good morning, {hostName.split(" ")[0]}</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            {alerts.length > 0
+              ? `${alerts.length} of your ${properties.length} locks ${alerts.length === 1 ? "needs" : "need"} attention before the next check-in.`
+              : `All ${properties.length} locks are healthy. Next check-in is ${properties[0].nextCheckIn.label.toLowerCase()}.`}
+          </p>
+        </div>
+        <Button variant="primary" icon="plus" onClick={onSchedule}>Schedule Access</Button>
+      </div>
+
+      <AlertBanner alerts={alerts} onResolve={onResolve} />
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Your Properties</h2>
+          <div className="text-xs text-slate-400">{properties.length} locks · live status</div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {properties.map((p) => (
+            <PropertyCard
+              key={p.id}
+              property={p}
+              onView={onView}
+              onRefreshOnCard={onRefreshOnCard}
+              onMarkResolved={onMarkResolved}
+              onMarkComplete={onMarkComplete}
+              onResolveNow={onResolveNow}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+window.Dashboard = Dashboard;
+
+
+// ===== alert-detail.jsx =====
+// Alert Detail screen + AI alert-copy helpers.
+
+// ---------- Alert-copy helpers ----------
+
+const ALERT_COPY_SYSTEM_PROMPT = `You are the alert-copy agent for Schlage AI Access Concierge. Your job is to generate notification copy for a single alert event delivered to a short-term rental host.
+
+The host is busy and often not at the property. The alert is the entire user experience for many hosts; vague alerts cause hosts to ignore future alerts. Every alert must include five elements: which property, which door, the specific failure mode, how much time remains before guest check-in, and what action the host should take.
+
+You will receive a structured JSON input describing the alert context. You will return a structured JSON output containing copy for three channels: SMS, push notification, and in-app detail view.
+
+Rules:
+1. Include all five required elements in every copy variant. Do not omit any element even if the input is ambiguous.
+2. Do not fabricate facts. Every concrete number (battery percentage, hours remaining, time of check-in) must come from the input. Every name (property, lock, guest) must come from the input.
+3. Use the severity field to set tone. "Critical" copy is direct and action-oriented. "High" copy is urgent but not alarming. "Medium" copy is informative.
+4. If the input indicates the host has received more than two alerts in the last 24 hours, soften the urgency language slightly in the push and SMS variants to avoid alert fatigue. Do not soften the in-app detail.
+5. Stay under all character limits. SMS body 160 chars max. Push title 50 chars max. Push body 120 chars max. In-app headline 80 chars max. In-app body 280 chars max. CTA 30 chars max.
+6. The primary CTA must be a verb phrase that maps to a real action the host can take in the app: "Refresh code now", "View lock health", "Notify co-host", "Contact support".
+7. Never use the phrase "lock issue detected" or any other generic placeholder phrase that does not name the specific failure mode.
+8. Do not include emoji.
+9. Do not include marketing language or upsell prompts.
+10. Return only the JSON object. No preamble, no markdown code fences, no explanation.
+11. For each alert, recommend the primary action based on the issue type. Refreshing the access code only fixes code sync issues — it does NOT fix battery drain or Wi-Fi outages, so do not recommend it as the primary action for those issues:
+   - low_battery or critical_battery: replace_battery (refreshing the code does not extend battery life)
+   - wifi_offline: notify_cohost (refreshing the code won't reach an unreachable lock)
+   - sync_pending or sync_failed: refresh_code
+   - could_not_verify: notify_cohost (we can't trust the lock's reported state; have a human verify)
+
+The body copy must recommend the SAME action as primary_action. For example, for low_battery the in_app body should tell the host to replace the AA batteries before the guest arrives — not to refresh the code.
+
+Output schema (return EXACTLY this shape):
+{
+  "sms": { "body": "..." },
+  "push": { "title": "...", "body": "..." },
+  "in_app": { "headline": "...", "body": "...", "primary_cta": "..." },
+  "primary_action": "refresh_code" | "notify_cohost" | "contact_support" | "replace_battery",
+  "metadata": {
+    "tone": "urgent" | "informative" | "reassuring",
+    "elements_included": {
+      "property_name": true,
+      "failure_mode": true,
+      "time_remaining": true,
+      "next_action": true,
+      "specific_value": true
+    }
+  }
+}
+
+The "primary_cta" string MUST be the human-readable label that matches the primary_action enum (e.g. "Refresh code now" for refresh_code, "Notify your co-host" for notify_cohost, "Contact Schlage support" for contact_support, "Replace battery in person" for replace_battery).
+
+Return only the structured JSON output.`;
+
+// Map our property state into the agent's input context schema.
+function buildAlertContext(property) {
+  const p = property;
+  let issueType = "low_battery";
+  let currentValue = p.battery;
+  if (p.connectivity === "Offline") { issueType = "wifi_offline"; currentValue = "6h since last seen"; }
+  else if (p.codeSync === "Pending") { issueType = "sync_pending"; currentValue = "awaiting push"; }
+  else if (p.battery <= 15) { issueType = "critical_battery"; currentValue = p.battery; }
+  const severity = p.status === "Offline" ? "critical" : p.battery <= 15 ? "critical" : p.battery <= 30 ? "high" : "medium";
+  return {
+    alert_id: `alert_${p.id}_${Date.now()}`,
+    property: { name: p.name, address_short: p.address.split(",").slice(-2).join(",").trim() },
+    lock: { name: p.lockName, model: p.lockModel.includes("Plus") ? "Schlage Encode Plus" : "Schlage Encode" },
+    issue: { type: issueType, current_value: currentValue, duration_minutes: issueType === "wifi_offline" ? 360 : null },
+    check_in: { guest_label: p.nextCheckIn.guest, scheduled_iso: p.nextCheckIn.iso, hours_remaining: p.nextCheckIn.hoursAway },
+    host_context: { alerts_in_last_24h: 0, preferred_channel: "push", timezone: "America/Los_Angeles" },
+    severity,
+  };
+}
+
+async function generateAlertCopy(context) {
+  const userMessage = JSON.stringify(context, null, 2);
+  const reply = await window.claude.complete({
+    messages: [
+      { role: "user", content: `${ALERT_COPY_SYSTEM_PROMPT}\n\nInput context:\n${userMessage}` },
+    ],
+  });
+  const cleaned = reply.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  return JSON.parse(cleaned);
+}
+
+// Deterministic rule from the spec — used both by templatedFallback and by the validator.
+function expectedPrimaryAction(context) {
+  const t = context?.issue?.type;
+  if (t === "low_battery" || t === "critical_battery") return "replace_battery";
+  if (t === "wifi_offline") return "notify_cohost";
+  if (t === "sync_pending" || t === "sync_failed") return "refresh_code";
+  if (t === "could_not_verify") return "notify_cohost";
+  return "refresh_code";
+}
+
+function validateAlertCopy(output, context) {
+  const checks = {};
+  const set = (k, label, pass, detail) => { checks[k] = { label, pass, detail }; };
+
+  // 1. Schema valid (required fields present)
+  let schemaPass = false, schemaDetail = "";
+  try {
+    if (!output || typeof output !== "object") throw new Error("output not an object");
+    if (!output.sms?.body) throw new Error("sms.body missing");
+    if (!output.push?.title || !output.push?.body) throw new Error("push.title or push.body missing");
+    if (!output.in_app?.headline || !output.in_app?.body || !output.in_app?.primary_cta) throw new Error("in_app fields missing");
+    schemaPass = true; schemaDetail = "All required fields present";
+  } catch (e) { schemaDetail = e.message; }
+  set("schema", "Schema valid", schemaPass, schemaDetail);
+
+  // 2. Metadata flags complete
+  let metaPass = false, metaDetail = "";
+  try {
+    if (!output?.metadata?.elements_included) throw new Error("metadata.elements_included missing");
+    const keys = ["property_name","failure_mode","time_remaining","next_action","specific_value"];
+    keys.forEach((k) => { if (typeof output.metadata.elements_included[k] !== "boolean") throw new Error(`flag ${k} missing`); });
+    metaPass = keys.every((k) => output.metadata.elements_included[k] === true);
+    metaDetail = metaPass ? "All 5 element flags = true" : "One or more element flags = false";
+  } catch (e) { metaDetail = e.message; }
+  set("metadata_flags", "Metadata flags complete", metaPass, metaDetail);
+
+  // 3. SMS within length budget
+  const smsLen = (output?.sms?.body || "").length;
+  set("sms_length", "SMS within 160 chars", smsLen <= 160 && smsLen > 0, `${smsLen}/160`);
+
+  // 4. Push within length budget
+  const ptLen = (output?.push?.title || "").length;
+  const pbLen = (output?.push?.body  || "").length;
+  set("push_length", "Push within 50 / 120 chars",
+    ptLen <= 50 && ptLen > 0 && pbLen <= 120 && pbLen > 0,
+    `title ${ptLen}/50 · body ${pbLen}/120`);
+
+  // 5. In-app within length budget
+  const hLen = (output?.in_app?.headline || "").length;
+  const bLen = (output?.in_app?.body || "").length;
+  const cLen = (output?.in_app?.primary_cta || "").length;
+  set("in_app_length", "In-app within 80 / 280 / 30 chars",
+    hLen <= 80 && hLen > 0 && bLen <= 280 && bLen > 0 && cLen <= 30 && cLen > 0,
+    `headline ${hLen}/80 · body ${bLen}/280 · cta ${cLen}/30`);
+
+  // Helpers for content checks
+  const blob = output?.in_app
+    ? `${output.in_app.headline} ${output.in_app.body}`.toLowerCase()
+    : "";
+  const allCopy = [
+    output?.sms?.body, output?.push?.title, output?.push?.body,
+    output?.in_app?.headline, output?.in_app?.body, output?.in_app?.primary_cta,
+  ].filter(Boolean).join(" ");
+
+  // 6. Property + lock named in copy
+  const propOk = blob.includes(context.property.name.toLowerCase());
+  set("names_grounded", "Property named in copy", propOk,
+    propOk ? `Mentions "${context.property.name}"` : `Missing "${context.property.name}"`);
+
+  // 7. Failure mode + specific value present
+  const failOk = /battery|offline|sync|signal|wi-?fi|unreachable|low|critical/.test(blob);
+  const valueOk = (typeof context.issue.current_value === "number")
+    ? blob.includes(String(context.issue.current_value))
+    : true;
+  set("failure_mode", "Failure mode + value present", failOk && valueOk,
+    `failure_keyword=${failOk}, value_in_copy=${valueOk}`);
+
+  // 8. Time remaining + action verb present
+  const timeOk = /hour|today|tomorrow|minute|pm|am|check-in|before/.test(blob);
+  const actionOk = /refresh|notify|contact|view|swap|replace|push|check/.test(blob);
+  set("time_action", "Time remaining + action verb present", timeOk && actionOk,
+    `time=${timeOk}, action=${actionOk}`);
+
+  // 9. Hallucination guard.
+  const pcts = allCopy.match(/\b\d{1,3}%/g) || [];
+  const groundedTerms = [
+    context.property.name, context.lock.name, context.check_in.guest_label,
+    String(context.check_in.hours_remaining), String(context.issue.current_value),
+  ].map((s) => String(s).toLowerCase());
+  const badPct = pcts.find((p) => {
+    const n = p.replace("%","");
+    return !groundedTerms.includes(n) && !groundedTerms.some((t) => t.includes(n));
+  });
+  const banned = /lock issue detected/i.test(allCopy);
+  let hallucPass = !badPct && !banned;
+  let hallucDetail = badPct ? `ungrounded percentage "${badPct}"`
+                    : banned ? "banned generic phrase used"
+                    : "No ungrounded facts or banned phrases";
+  set("hallucination", "No hallucinated facts", hallucPass, hallucDetail);
+
+  // 10. primary_action present and valid (and matches expected rule)
+  const ACTIONS = ["refresh_code", "notify_cohost", "contact_support", "replace_battery"];
+  const pa = output?.primary_action;
+  const expected = expectedPrimaryAction(context);
+  const paPresent = ACTIONS.includes(pa);
+  const paMatches = paPresent && pa === expected;
+  set("primary_action", "Primary action valid",
+    paMatches,
+    paPresent
+      ? (paMatches ? `${pa} (matches expected)` : `${pa} (expected ${expected})`)
+      : `missing or unknown: ${JSON.stringify(pa)}`);
+
+  const passed = Object.values(checks).every((c) => c.pass);
+  return { passed, checks };
+}
+
+function templatedFallback(context) {
+  const c = context;
+  const issue = c.issue.type;
+  const hrs = c.check_in.hours_remaining;
+  let failPhrase = "a health issue";
+  if (issue === "critical_battery" || issue === "low_battery") failPhrase = `battery at ${c.issue.current_value}%`;
+  else if (issue === "wifi_offline") failPhrase = "Wi-Fi offline";
+  else if (issue === "sync_pending" || issue === "sync_failed") failPhrase = "code sync pending";
+
+  const primary_action = expectedPrimaryAction(c);
+  const ctaLabel = {
+    refresh_code:    "Refresh code now",
+    notify_cohost:   "Notify your co-host",
+    contact_support: "Contact Schlage support",
+    replace_battery: "Replace battery in person",
+  }[primary_action];
+
+  return {
+    sms: { body: `${c.property.name} (${c.lock.name}): ${failPhrase}. ${c.check_in.guest_label} checks in in ${hrs}h. ${ctaLabel} in the app.` },
+    push: {
+      title: `${c.property.name}: ${failPhrase}`,
+      body: `${c.check_in.guest_label} checks in in ${hrs}h. ${ctaLabel}.`,
+    },
+    in_app: {
+      headline: `${c.property.name}: action needed before check-in`,
+      body: `${c.lock.name} is showing ${failPhrase}. ${c.check_in.guest_label} checks in in ${hrs} hours. ${ctaLabel} to resolve.`,
+      primary_cta: ctaLabel,
+    },
+    primary_action,
+    metadata: {
+      tone: c.severity === "critical" ? "urgent" : "informative",
+      elements_included: { property_name: true, failure_mode: true, time_remaining: true, next_action: true, specific_value: true },
+    },
+  };
+}
+
+Object.assign(window, { generateAlertCopy, validateAlertCopy, buildAlertContext, templatedFallback, expectedPrimaryAction });
+
+const SignalDetail = ({ icon, label, value, sublabel, tone }) => {
+  const toneClass = {
+    good: { bg: "bg-emerald-50", text: "text-[#16a34a]", border: "border-emerald-200" },
+    warn: { bg: "bg-amber-50",  text: "text-[#d97706]", border: "border-amber-200" },
+    bad:  { bg: "bg-red-50",    text: "text-[#dc2626]", border: "border-red-200" },
+    mute: { bg: "bg-slate-50",  text: "text-slate-600", border: "border-slate-200" },
+  }[tone];
+  return (
+    <div className={`rounded-lg border ${toneClass.border} ${toneClass.bg} p-4`}>
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500 mb-2">
+        <Icon name={icon} className={`w-4 h-4 ${toneClass.text}`} strokeWidth={2} />
+        {label}
+      </div>
+      <div className={`text-2xl font-semibold ${toneClass.text}`}>{value}</div>
+      {sublabel && <div className="text-xs text-slate-600 mt-1">{sublabel}</div>}
+    </div>
+  );
+};
+
+// Session cache: alert_id -> { copy, validation, context, source, raw }
+window.__alertCopyCache = window.__alertCopyCache || {};
+
+// ============================================================
+// ActionScreen — post-notification destination. NOT diagnostic.
+// One big primary action + escalations + link to full details.
+// The primary action is driven by AI primary_action recommendation;
+// the other three actions automatically become escalation cards.
+// ============================================================
+const ACTION_DEFS = {
+  refresh_code: {
+    icon: "sync",
+    primaryLabel: "Refresh access code now",
+    primaryLoadingLabel: "Pushing fresh code to the lock…",
+    primaryVariant: "dark",
+    escLabel: "Refresh access code",
+    escDesc:  "Force a fresh code push to the lock and verify it stored.",
+    successHeadline: "Code refreshed",
+    successBody:     (p) => `${p.nextCheckIn.guest} is good to go. We'll keep monitoring and ping you only if something changes.`,
+    successBadge:    "All Clear",
+    clearsAlert:     true,
+  },
+  notify_cohost: {
+    icon: "user",
+    primaryLabel: "Notify your co-host",
+    primaryLoadingLabel: "Notifying co-host…",
+    primaryVariant: "dark",
+    escLabel: "Notify co-host",
+    escDesc:  "Send a pre-written SMS to Diego with the address and what to check.",
+    successHeadline: "Co-host notified",
+    successBody:     (p) => `Diego will swing by ${p.name} to check the lock before ${p.nextCheckIn.guest} arrives. We'll mark this as Action Pending until the lock reports healthy again.`,
+    successBadge:    "Action Pending",
+  },
+  contact_support: {
+    icon: "spark",
+    primaryLabel: "Contact Schlage support",
+    primaryLoadingLabel: "Opening priority ticket…",
+    primaryVariant: "dark",
+    escLabel: "Contact Schlage support",
+    escDesc:  "Open a priority ticket. A specialist responds within 15 minutes.",
+    successHeadline: "Support contacted",
+    successBody:     () => "A Schlage specialist will reach out within 15 minutes. We've attached the diagnostic snapshot automatically and will hold the lock in Action Pending until support confirms a fix.",
+    successBadge:    "Action Pending",
+  },
+  replace_battery: {
+    icon: "battery",
+    primaryLabel: "Replace battery in person",
+    primaryLoadingLabel: "Replace battery in person",
+    primaryVariant: "dark",
+    escLabel: "Replace battery in person",
+    escDesc:  "Step-by-step guide for swapping AA batteries on this lock model.",
+    successHeadline: "Batteries replaced",
+    successBody:     (p) => `Great. We'll verify the new battery level on the next health check and clear the alert automatically before ${p.nextCheckIn.guest} arrives.`,
+    successBadge:    "Action Pending",
+  },
+};
+const ACTION_ORDER = ["refresh_code", "replace_battery", "notify_cohost", "contact_support"];
+
+const ActionScreen = ({ property, onBack, onRefreshCode, onActionTaken, onScheduleAction, onSnooze, onViewLockDetails, alertCopyCache, onCacheAlertCopy }) => {
+  const p = property;
+  const [activeAction, setActiveAction] = React.useState(null);   // which action was kicked off
+  const [refreshState, setRefreshState] = React.useState("idle"); // idle | running | success
+  const [successContext, setSuccessContext] = React.useState(null); // { kind, actionKey, dueAt?, until? }
+  // Multi-step modal state. null = closed; otherwise step name.
+  const [cohostStep,  setCohostStep]  = React.useState(null); // "choice" | "send" | "schedule" | "snooze" | "customSnooze"
+  const [batteryStep, setBatteryStep] = React.useState(null); // "choice" | "instructions" | "schedule" | "snooze" | "customSnooze"
+  const [supportOpen, setSupportOpen] = React.useState(false);
+  const [cohostSent,  setCohostSent]  = React.useState(false);
+  const [supportSent, setSupportSent] = React.useState(false);
+  // Shared time-picker value for any schedule/customSnooze prompt.
+  const [scheduleTime, setScheduleTime] = React.useState(() => defaultScheduleIso(property));
+
+  // ---- AI alert copy: load once per property per session ----
+  const cached = alertCopyCache?.[p.id];
+  const [copyState, setCopyState] = React.useState(cached || { status: "loading" });
+
+  React.useEffect(() => {
+    if (cached) { setCopyState(cached); return; }
+    if (!p.alert) { setCopyState({ status: "none" }); return; }
+    let cancelled = false;
+    setCopyState({ status: "loading" });
+    const context = buildAlertContext(p);
+    (async () => {
+      let raw, copy, validation, source;
+      try {
+        raw = await generateAlertCopy(context);
+        validation = validateAlertCopy(raw, context);
+        if (validation.passed) {
+          copy = raw; source = "ai";
+        } else {
+          console.warn("[alert-copy] validation failed, using template:", validation.checks);
+          copy = templatedFallback(context); source = "fallback";
+        }
+      } catch (e) {
+        console.warn("[alert-copy] API error, using template:", e.message);
+        copy = templatedFallback(context);
+        validation = { passed: false, checks: { schema: { label: "Schema valid", pass: false, detail: `API error: ${e.message}` } } };
+        source = "fallback";
+      }
+      if (cancelled) return;
+      const result = { status: "ready", copy, validation, context, source, raw };
+      setCopyState(result);
+      onCacheAlertCopy && onCacheAlertCopy(p.id, result);
+    })();
+    return () => { cancelled = true; };
+  }, [p.id]);
+
+  const isOffline = p.status === "Offline";
+  const accent = isOffline ? "red" : "amber";
+  const bannerBg = accent === "red" ? "bg-[#fef2f2] border-[#fecaca]" : "bg-[#fffbeb] border-[#fde68a]";
+  const bannerAccent = accent === "red" ? "text-[#dc2626]" : "text-[#d97706]";
+
+  // Generic "you committed to something" success state.
+  const commit = (info) => {
+    setActiveAction(info.actionKey);
+    setSuccessContext(info);
+    setRefreshState("success");
+    if (info.kind === "did") {
+      if (info.actionKey === "refresh_code") onRefreshCode(p.id);
+      else onActionTaken(p.id, info.actionKey);
+    } else if (info.kind === "scheduled") {
+      onScheduleAction(p.id, info.actionKey, info.dueAt);
+    } else if (info.kind === "snoozed") {
+      onSnooze(p.id, info.until);
+    }
+  };
+
+  const handleRefresh = () => {
+    if (refreshState !== "idle") return;
+    setActiveAction("refresh_code");
+    setRefreshState("running");
+    setTimeout(() => {
+      setRefreshState("success");
+      setSuccessContext({ kind: "did", actionKey: "refresh_code" });
+      onRefreshCode(p.id);
+    }, 2000);
+  };
+
+  const sendCohost = () => {
+    setCohostSent(true);
+    setTimeout(() => {
+      setCohostStep(null);
+      setCohostSent(false);
+      commit({ kind: "did", actionKey: "notify_cohost" });
+    }, 1500);
+  };
+  const sendSupport = () => {
+    setSupportSent(true);
+    setTimeout(() => {
+      setSupportOpen(false);
+      setSupportSent(false);
+      commit({ kind: "did", actionKey: "contact_support" });
+    }, 1500);
+  };
+  const confirmBatteryReplaced = () => {
+    setBatteryStep(null);
+    commit({ kind: "did", actionKey: "replace_battery" });
+  };
+
+  // Convert the datetime-local <input> string into ms-since-epoch.
+  const parseScheduleMs = () => {
+    const ms = new Date(scheduleTime).getTime();
+    return Number.isFinite(ms) ? ms : Date.now() + 4 * 3600 * 1000;
+  };
+
+  // Schedule the current modal's action for later.
+  const scheduleFor = (actionKey) => {
+    const dueAt = parseScheduleMs();
+    setCohostStep(null);
+    setBatteryStep(null);
+    commit({ kind: "scheduled", actionKey, dueAt });
+  };
+
+  // Snooze the alert by a preset offset (preset.ms) or absolute time (preset.at()).
+  const snoozeFor = (preset) => {
+    const until = preset.ms ? Date.now() + preset.ms : preset.at();
+    setCohostStep(null);
+    setBatteryStep(null);
+    commit({ kind: "snoozed", actionKey: activeAction || "replace_battery", until });
+  };
+  const snoozeCustom = () => {
+    const until = parseScheduleMs();
+    setCohostStep(null);
+    setBatteryStep(null);
+    commit({ kind: "snoozed", actionKey: activeAction || "replace_battery", until });
+  };
+
+  // Map a primary_action enum to the click handler that kicks it off.
+  // For replace_battery and notify_cohost, that's the timing-choice step.
+  const runAction = (key) => {
+    if (refreshState !== "idle") return;
+    setActiveAction(key);
+    if (key === "refresh_code")    return handleRefresh();
+    if (key === "notify_cohost")   return setCohostStep("choice");
+    if (key === "contact_support") return setSupportOpen(true);
+    if (key === "replace_battery") return setBatteryStep("choice");
+  };
+
+  const loading = copyState.status === "loading";
+  const copy    = copyState.copy;
+  const headline = loading ? "Loading alert…" : (copy?.in_app?.headline || p.alert?.title || "Action required");
+  const body     = loading ? "Generating alert copy…" : (copy?.in_app?.body || p.alert?.body || "");
+
+  // Resolve the recommended primary action. Fall back to the deterministic rule
+  // if the AI output is missing it (e.g. fallback template, validation failure).
+  const primaryKey = (copy && ACTION_DEFS[copy.primary_action])
+    ? copy.primary_action
+    : expectedPrimaryAction(buildAlertContext(p));
+  const primaryDef = ACTION_DEFS[primaryKey];
+  const escalationKeys = ACTION_ORDER.filter((k) => k !== primaryKey);
+
+  // ----- SUCCESS STATE -----
+  if (refreshState === "success") {
+    const def = ACTION_DEFS[activeAction] || ACTION_DEFS.refresh_code;
+    const ctx = successContext || { kind: "did", actionKey: activeAction };
+    let headline, bodyText;
+    if (ctx.kind === "scheduled") {
+      headline = "Action scheduled";
+      bodyText = `${SCHEDULED_LABELS[ctx.actionKey] || "Action"} ${formatScheduledLabel(ctx.dueAt)}. We'll remind you and hold the card in Action Scheduled until you mark it complete.`;
+    } else if (ctx.kind === "snoozed") {
+      headline = "Reminder set";
+      bodyText = `We'll nudge you ${formatTimeUntil(ctx.until)} (${new Date(ctx.until).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}). The alert stays visible but quieted on the dashboard.`;
+    } else {
+      headline = def.successHeadline;
+      bodyText = def.successBody(p);
+    }
+    return (
+      <div className="space-y-5 max-w-2xl mx-auto" data-screen-label="02 Action">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
+          <Icon name="arrow-left" className="w-4 h-4"/> Back to dashboard
+        </button>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wide">{p.lockName}</div>
+            <h1 className="text-2xl font-semibold text-slate-900 mt-0.5">{p.name}</h1>
+          </div>
+          <StatusBadge status={p.status} size="lg" />
+        </div>
+
+        <Card className="p-8 text-center border-emerald-200">
+          <div className="inline-flex w-14 h-14 rounded-full bg-emerald-100 grid place-items-center mb-4">
+            <Icon name={ctx.kind === "scheduled" ? "calendar-clock" : ctx.kind === "snoozed" ? "moon" : "check"} className="w-7 h-7 text-[#16a34a]" strokeWidth={2.5}/>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900">{headline}</h2>
+          <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-md mx-auto">
+            {bodyText}
+          </p>
+          <div className="mt-6">
+            <Button variant="primary" onClick={onBack}>Back to dashboard</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5 max-w-2xl mx-auto" data-screen-label="02 Action">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
+        <Icon name="arrow-left" className="w-4 h-4"/> Back to dashboard
+      </button>
+
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-xs text-slate-500 uppercase tracking-wide">{p.lockName}</div>
+          <h1 className="text-2xl font-semibold text-slate-900 mt-0.5">{p.name}</h1>
+        </div>
+        <StatusBadge status={p.status} size="lg" />
+      </div>
+
+      {/* AI-generated alert card */}
+      <div className={`rounded-lg border ${bannerBg} p-5`}>
+        <div className="flex items-start gap-3">
+          <div className={`${bannerAccent} mt-0.5`}><Icon name="alert" className="w-6 h-6" strokeWidth={2}/></div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-semibold text-slate-900">{headline}</h2>
+              {!loading && copyState.source && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5"
+                  title={copyState.source === "ai" ? "Headline and body generated by Claude for this specific alert" : "AI output failed validation — using templated fallback"}
+                >
+                  <Icon name="spark" className="w-3 h-3" strokeWidth={2}/>
+                  {copyState.source === "ai" ? "AI-generated" : "AI fallback"}
+                </span>
+              )}
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                  <Icon name="sync" className="w-3 h-3 animate-spin" strokeWidth={2}/> Generating…
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-700 mt-1.5 leading-relaxed">{body}</p>
+            <div className="flex items-center gap-2 mt-3 text-sm">
+              <Icon name="clock" className={`w-4 h-4 ${bannerAccent}`} strokeWidth={2} />
+              <span className="font-semibold text-slate-800">{p.nextCheckIn.hoursAway} hours remaining</span>
+              <span className="text-slate-500">until {p.nextCheckIn.guest} checks in</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Big primary action — driven by AI primary_action */}
+      <button
+        onClick={() => runAction(primaryKey)}
+        disabled={refreshState !== "idle" || loading}
+        className={`w-full rounded-lg px-6 py-5 text-white font-semibold text-base transition flex items-center justify-center gap-2.5 ${
+          refreshState === "running"
+            ? "bg-slate-400 cursor-wait"
+            : "bg-[#1a1a2e] hover:bg-[#2a2a44] shadow-[0_4px_12px_rgba(15,23,42,0.18)] disabled:opacity-60 disabled:cursor-wait"
+        }`}
+      >
+        <Icon
+          name={primaryDef.icon}
+          className={`w-5 h-5 ${refreshState === "running" && primaryKey === "refresh_code" ? "animate-spin" : ""}`}
+          strokeWidth={2.5}
+        />
+        {refreshState === "running" ? primaryDef.primaryLoadingLabel : primaryDef.primaryLabel}
+      </button>
+
+      {/* Escalation options — the other three actions, in stable order */}
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-2">If that doesn't fix it</div>
+        <div className="grid grid-cols-1 gap-2">
+          {escalationKeys.map((key) => {
+            const def = ACTION_DEFS[key];
+            return (
+              <button
+                key={key}
+                onClick={() => runAction(key)}
+                disabled={refreshState !== "idle"}
+                className="flex items-center gap-3 w-full text-left rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-slate-900 hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                <div className="w-9 h-9 rounded-md bg-slate-100 grid place-items-center">
+                  <Icon name={def.icon} className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-slate-900">{def.escLabel}</div>
+                  <div className="text-xs text-slate-500">{def.escDesc}</div>
+                </div>
+                <Icon name="arrow-left" className="w-4 h-4 text-slate-400 rotate-180" strokeWidth={2}/>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="text-center pt-2">
+        <button onClick={() => onViewLockDetails(p.id)} className="text-sm text-slate-500 hover:text-slate-900 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-700">
+          View full lock details
+        </button>
+      </div>
+
+      {/* ----- Notify Co-Host: multi-step modal ----- */}
+      <Modal
+        open={cohostStep != null}
+        onClose={() => setCohostStep(null)}
+        title={
+          cohostStep === "send"     ? "Send to co-host"   :
+          cohostStep === "schedule" ? "Schedule cohost SMS" :
+          cohostStep === "snooze" || cohostStep === "customSnooze" ? "Remind me later" :
+          "Notify co-host"
+        }
+        footer={
+          cohostStep === "send" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setCohostStep("choice")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={sendCohost} icon={cohostSent ? "check" : null}>
+                {cohostSent ? "Sent" : "Send Alert"}
+              </Button>
+            </>
+          ) : cohostStep === "schedule" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setCohostStep("choice")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={() => scheduleFor("notify_cohost")} icon="calendar-clock">Confirm schedule</Button>
+            </>
+          ) : cohostStep === "customSnooze" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setCohostStep("snooze")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={snoozeCustom} icon="moon">Set reminder</Button>
+            </>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => setCohostStep(null)}>Cancel</Button>
+          )
+        }
+      >
+        {cohostStep === "choice" && (
+          <div className="space-y-2">
+            <p className="text-sm text-slate-600">When do you want to notify Diego?</p>
+            <button onClick={() => setCohostStep("send")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="user" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">Send now</div>
+                <div className="text-xs text-slate-500">Pre-written SMS goes out immediately.</div>
+              </div>
+            </button>
+            <button onClick={() => setCohostStep("schedule")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="calendar-clock" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">Schedule for later</div>
+                <div className="text-xs text-slate-500">Pick a time. We'll send it then.</div>
+              </div>
+            </button>
+            <button onClick={() => setCohostStep("snooze")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="moon" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">Remind me to send</div>
+                <div className="text-xs text-slate-500">Snooze the alert; we'll nudge you to decide later.</div>
+              </div>
+            </button>
+          </div>
+        )}
+        {cohostStep === "send" && (
+          <>
+            <p className="text-xs text-slate-500 mb-2">Pre-written message · sent via SMS to Diego (co-host)</p>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 leading-relaxed">
+              Hi Diego — the Schlage lock at {p.name} ({p.address}) is showing {p.status === "Offline" ? "as offline" : `low battery (${p.battery}%)`}.
+              {" "}{p.nextCheckIn.guest} checks in at {p.nextCheckIn.label.toLowerCase()}. Can you swing by and swap the batteries / verify it responds before then? Thanks.
+            </div>
+          </>
+        )}
+        {cohostStep === "schedule" && (
+          <>
+            <p className="text-sm text-slate-700 mb-3">When should we send the SMS to Diego?</p>
+            <input
+              type="datetime-local"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]"
+            />
+            <p className="text-xs text-slate-500 mt-2">Default is 4 hours before {p.nextCheckIn.guest} checks in.</p>
+          </>
+        )}
+        {cohostStep === "snooze" && (
+          <div className="space-y-2">
+            <p className="text-sm text-slate-600">Remind me to deal with this:</p>
+            {SNOOZE_PRESETS.map((opt) => (
+              <button key={opt.key} onClick={() => snoozeFor(opt)} className="w-full flex items-center justify-between text-left rounded-lg border border-slate-200 px-3 py-2.5 hover:border-slate-900 hover:bg-slate-50 transition">
+                <span className="text-sm font-semibold text-slate-900">{opt.label}</span>
+                <Icon name="moon" className="w-4 h-4 text-slate-400" strokeWidth={2}/>
+              </button>
+            ))}
+            <button onClick={() => setCohostStep("customSnooze")} className="w-full flex items-center justify-between text-left rounded-lg border border-slate-200 px-3 py-2.5 hover:border-slate-900 hover:bg-slate-50 transition">
+              <span className="text-sm font-semibold text-slate-900">Custom time…</span>
+              <Icon name="clock" className="w-4 h-4 text-slate-400" strokeWidth={2}/>
+            </button>
+          </div>
+        )}
+        {cohostStep === "customSnooze" && (
+          <>
+            <p className="text-sm text-slate-700 mb-3">Remind me at:</p>
+            <input
+              type="datetime-local"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]"
+            />
+          </>
+        )}
+      </Modal>
+
+      {/* ----- Contact Support: simple modal (unchanged behavior) ----- */}
+      <Modal
+        open={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        title="Contact Schlage Support"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setSupportOpen(false)}>Close</Button>
+            <Button variant="primary" size="sm" onClick={sendSupport} icon={supportSent ? "check" : null}>
+              {supportSent ? "Sent" : "Send Priority Request"}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          We'll open a priority ticket for <strong>{p.name}</strong> ({p.lockName}). A specialist will contact you within 15 minutes at the number on file.
+        </p>
+        <ul className="mt-3 text-xs text-slate-500 space-y-1">
+          <li>· Diagnostic snapshot will be attached automatically</li>
+          <li>· Includes battery, RSSI, and last 24h of sync events</li>
+          <li>· Average response time: 8 min</li>
+        </ul>
+      </Modal>
+
+      {/* ----- Replace battery: multi-step modal ----- */}
+      <Modal
+        open={batteryStep != null}
+        onClose={() => setBatteryStep(null)}
+        title={
+          batteryStep === "instructions" ? "Replace battery in person"     :
+          batteryStep === "schedule"     ? "Schedule battery replacement"  :
+          batteryStep === "snooze" || batteryStep === "customSnooze" ? "Remind me later" :
+          "Replace battery — when?"
+        }
+        footer={
+          batteryStep === "instructions" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setBatteryStep("choice")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={confirmBatteryReplaced} icon="check">I replaced them</Button>
+            </>
+          ) : batteryStep === "schedule" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setBatteryStep("choice")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={() => scheduleFor("replace_battery")} icon="calendar-clock">Confirm schedule</Button>
+            </>
+          ) : batteryStep === "customSnooze" ? (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setBatteryStep("snooze")}>Back</Button>
+              <Button variant="primary" size="sm" onClick={snoozeCustom} icon="moon">Set reminder</Button>
+            </>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => setBatteryStep(null)}>Cancel</Button>
+          )
+        }
+      >
+        {batteryStep === "choice" && (
+          <div className="space-y-2">
+            <p className="text-sm text-slate-600">When can you do this?</p>
+            <button onClick={() => setBatteryStep("instructions")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="battery" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">I'm there now</div>
+                <div className="text-xs text-slate-500">Walk through the 4-step swap and confirm when done.</div>
+              </div>
+            </button>
+            <button onClick={() => setBatteryStep("schedule")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="calendar-clock" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">I'll do it by a specific time</div>
+                <div className="text-xs text-slate-500">Commit to a deadline. Card moves to Action Scheduled.</div>
+              </div>
+            </button>
+            <button onClick={() => { setBatteryStep(null); setCohostStep("send"); }} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="user" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">I can't — notify my co-host</div>
+                <div className="text-xs text-slate-500">Hand off to Diego. We'll mark the card Action Pending.</div>
+              </div>
+            </button>
+            <button onClick={() => setBatteryStep("snooze")} className="w-full flex items-center gap-3 text-left rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-900 hover:bg-slate-50 transition">
+              <Icon name="moon" className="w-4 h-4 text-slate-700" strokeWidth={2}/>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-900">Remind me later</div>
+                <div className="text-xs text-slate-500">Snooze the alert and decide later.</div>
+              </div>
+            </button>
+          </div>
+        )}
+        {batteryStep === "instructions" && (
+          <>
+            <p className="text-sm text-slate-700">If you're nearby, swapping the batteries takes about 2 minutes.</p>
+            <ol className="mt-3 text-sm text-slate-700 space-y-1.5 list-decimal pl-5">
+              <li>Open the cover on the interior side of the lock.</li>
+              <li>Replace all 4 AA alkaline batteries (do not mix old and new).</li>
+              <li>Close the cover. The lock will beep once when ready.</li>
+              <li>We'll automatically confirm the new battery level within a few minutes.</li>
+            </ol>
+          </>
+        )}
+        {batteryStep === "schedule" && (
+          <>
+            <p className="text-sm text-slate-700 mb-3">By when will the batteries be replaced?</p>
+            <input
+              type="datetime-local"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]"
+            />
+            <p className="text-xs text-slate-500 mt-2">Default is 4 hours before {p.nextCheckIn.guest} checks in.</p>
+          </>
+        )}
+        {batteryStep === "snooze" && (
+          <div className="space-y-2">
+            <p className="text-sm text-slate-600">Remind me to deal with this:</p>
+            {SNOOZE_PRESETS.map((opt) => (
+              <button key={opt.key} onClick={() => snoozeFor(opt)} className="w-full flex items-center justify-between text-left rounded-lg border border-slate-200 px-3 py-2.5 hover:border-slate-900 hover:bg-slate-50 transition">
+                <span className="text-sm font-semibold text-slate-900">{opt.label}</span>
+                <Icon name="moon" className="w-4 h-4 text-slate-400" strokeWidth={2}/>
+              </button>
+            ))}
+            <button onClick={() => setBatteryStep("customSnooze")} className="w-full flex items-center justify-between text-left rounded-lg border border-slate-200 px-3 py-2.5 hover:border-slate-900 hover:bg-slate-50 transition">
+              <span className="text-sm font-semibold text-slate-900">Custom time…</span>
+              <Icon name="clock" className="w-4 h-4 text-slate-400" strokeWidth={2}/>
+            </button>
+          </div>
+        )}
+        {batteryStep === "customSnooze" && (
+          <>
+            <p className="text-sm text-slate-700 mb-3">Remind me at:</p>
+            <input
+              type="datetime-local"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]"
+            />
+          </>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+window.ActionScreen = ActionScreen;
+
+
+// ===== scheduling.jsx =====
+// AI Scheduling screen — natural language -> structured access code via Claude.
+
+const SYSTEM_PROMPT = `You are an AI scheduling assistant for a smart lock management app used by short-term rental hosts.
+
+Your job is to parse a natural-language access request and return a structured JSON object.
+
+The host manages the following properties and locks:
+- Property: "Beachside Studio", Lock: "Front Door Encode", Lock ID: "lock_001"
+- Property: "Downtown Loft", Lock: "Main Entry Encode Plus", Lock ID: "lock_002"
+- Property: "Mountain Cabin", Lock: "Cabin Door Encode", Lock ID: "lock_003"
+
+The current date is __DATE__.
+
+Existing bookings (check for conflicts):
+- lock_001: Guest checked in June 5 3pm through June 8 11am
+- lock_001: Guest checked in June 14 4pm through June 17 11am
+- lock_002: Guest checked in June 6 3pm through June 9 11am
+- lock_003: Guest checked in June 20 2pm through June 23 10am
+
+Return ONLY a valid JSON object with this exact structure. Do not include any explanation or markdown.
+
+{
+  "parsed": {
+    "who": "string — who is getting access (e.g. cleaning crew, guest name)",
+    "lock_id": "string — which lock (lock_001, lock_002, or lock_003, infer from context or default to lock_001)",
+    "lock_name": "string — human-readable lock name",
+    "property_name": "string — property name",
+    "schedule": "string — human-readable schedule description",
+    "start": "ISO 8601 datetime of first access window start",
+    "end": "ISO 8601 datetime of first access window end",
+    "recurring": "boolean",
+    "recurrence_description": "string or null"
+  },
+  "conflict": {
+    "detected": "boolean",
+    "description": "string or null — plain language description of the conflict if detected",
+    "suggested_adjustment": "string or null — suggested alternative window if conflict detected"
+  },
+  "confidence": "number between 0 and 1",
+  "clarification_needed": "boolean — true if request is too ambiguous to parse",
+  "clarification_prompt": "string or null — question to ask the host if clarification is needed"
+}
+
+If the request does not specify a property, default to lock_001 (Beachside Studio).
+If the request is completely unrelated to access scheduling, set clarification_needed to true.`;
+
+const formatTimeRange = (startIso, endIso) => {
+  try {
+    const s = new Date(startIso);
+    const e = new Date(endIso);
+    const dOpts = { month: "short", day: "numeric" };
+    const tOpts = { hour: "numeric", minute: "2-digit" };
+    const sameDay = s.toDateString() === e.toDateString();
+    if (sameDay) {
+      return `${s.toLocaleDateString("en-US", dOpts)}, ${s.toLocaleTimeString("en-US", tOpts)} – ${e.toLocaleTimeString("en-US", tOpts)}`;
+    }
+    return `${s.toLocaleDateString("en-US", dOpts)} ${s.toLocaleTimeString("en-US", tOpts)} – ${e.toLocaleDateString("en-US", dOpts)} ${e.toLocaleTimeString("en-US", tOpts)}`;
+  } catch {
+    return `${startIso} – ${endIso}`;
+  }
+};
+
+const ParsedRow = ({ label, value }) => (
+  <div className="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0">
+    <div className="text-[10px] uppercase tracking-wider text-slate-400 w-20 pt-0.5">{label}</div>
+    <div className="text-sm text-slate-800 font-medium flex-1">{value || "—"}</div>
+  </div>
+);
+
+const ParsedCard = ({ parsed }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Here's what I understood</div>
+    <ParsedRow label="Who"    value={parsed.who} />
+    <ParsedRow label="Lock"   value={`${parsed.lock_name} — ${parsed.property_name}`} />
+    <ParsedRow label="When"   value={parsed.schedule} />
+    <ParsedRow label="Window" value={parsed.start && parsed.end ? formatTimeRange(parsed.start, parsed.end) : null} />
+    {parsed.recurring && parsed.recurrence_description && (
+      <ParsedRow label="Repeats" value={parsed.recurrence_description} />
+    )}
+  </div>
+);
+
+const Scheduling = ({ properties, accessCodes, onAddCode, prefillLockId, onClearPrefill }) => {
+  const [input, setInput] = React.useState("");
+  const [selectedLockId, setSelectedLockId] = React.useState(prefillLockId || "");
+  const [loading, setLoading] = React.useState(false);
+  const [response, setResponse] = React.useState(null); // parsed full JSON
+  const [error, setError] = React.useState(null);
+  const [confirmed, setConfirmed] = React.useState(false); // becomes true after add / adjust
+
+  React.useEffect(() => {
+    if (prefillLockId) {
+      setSelectedLockId(prefillLockId);
+      onClearPrefill && onClearPrefill();
+    }
+  }, [prefillLockId]);
+
+  const submit = async () => {
+    if (!input.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    setResponse(null);
+    setConfirmed(false);
+
+    const todayStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    let prompt = SYSTEM_PROMPT.replace("__DATE__", todayStr);
+    if (selectedLockId) {
+      const prop = properties.find(p => p.id === selectedLockId);
+      if (prop) {
+        prompt += `\n\nThe host has pre-selected the property "${prop.name}" (${prop.lockName}, ${prop.id}). Use this lock unless the request clearly references a different one.`;
+      }
+    }
+
+    try {
+      const reply = await window.claude.complete({
+        messages: [
+          { role: "user", content: `${prompt}\n\nRequest: ${input.trim()}` },
+        ],
+      });
+      // Strip any stray markdown fences just in case.
+      const cleaned = reply.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+      const parsed = JSON.parse(cleaned);
+      setResponse(parsed);
+    } catch (e) {
+      setError("Couldn't parse the response. Try rephrasing — e.g. include who, when, and which lock.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addCodeFromResponse = (override) => {
+    if (!response || !response.parsed) return;
+    const p = response.parsed;
+    const lockId = p.lock_id || selectedLockId || "lock_001";
+    const lockName = p.lock_name || properties.find(x => x.id === lockId)?.lockName || "—";
+    const codeWindow = override?.window || (p.start && p.end ? formatTimeRange(p.start, p.end) : p.schedule);
+    onAddCode({
+      id: `c${Date.now()}`,
+      name: p.who,
+      type: /clean/i.test(p.who) ? "Cleaner" : /contractor|hvac|plumber/i.test(p.who) ? "Contractor" : "Guest",
+      lockId,
+      lockName,
+      validFrom: codeWindow.split("–")[0]?.trim() || "—",
+      validUntil: codeWindow.split("–")[1]?.trim() || "—",
+      window: codeWindow,
+      status: "Pending",
+    });
+    setConfirmed(true);
+  };
+
+  const renderResponse = () => {
+    if (!response) return null;
+    const { parsed, conflict, confidence, clarification_needed, clarification_prompt } = response;
+
+    // Case 1: clarification
+    if (clarification_needed) {
+      return (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-blue-600 mt-0.5"><Icon name="spark" className="w-5 h-5" strokeWidth={2}/></div>
+            <div>
+              <div className="text-sm font-semibold text-blue-900">I need a bit more info</div>
+              <div className="text-sm text-blue-800 mt-1">{clarification_prompt || "Could you rephrase that with a clearer who/when?"}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        <ParsedCard parsed={parsed} />
+
+        {/* Case 2: conflict */}
+        {conflict?.detected && !confirmed && (
+          <div className="rounded-lg border border-[#fde68a] bg-[#fffbeb] p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-[#d97706] mt-0.5"><Icon name="alert" className="w-5 h-5" strokeWidth={2}/></div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-amber-900">Conflict detected</div>
+                <div className="text-sm text-amber-900 mt-1">{conflict.description}</div>
+                {conflict.suggested_adjustment && (
+                  <div className="text-sm text-amber-900 mt-2">
+                    <span className="font-medium">Suggestion:</span> {conflict.suggested_adjustment}
+                  </div>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <Button variant="primary" size="sm" onClick={() => addCodeFromResponse({ window: conflict.suggested_adjustment || (parsed.start && parsed.end ? formatTimeRange(parsed.start, parsed.end) : parsed.schedule) })}>
+                    Yes, adjust
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => addCodeFromResponse()}>
+                    Enter manually
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Case 3: low confidence */}
+        {!conflict?.detected && !confirmed && confidence < 0.7 && (
+          <div className="rounded-lg border border-[#fde68a] bg-[#fefce8] p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-[#a16207] mt-0.5"><Icon name="spark" className="w-5 h-5" strokeWidth={2}/></div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-yellow-900">I want to make sure I understood correctly</div>
+                <div className="text-sm text-yellow-900 mt-1">
+                  I'm only {Math.round(confidence * 100)}% confident I parsed this correctly. Please confirm the details above before I push the code.
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button variant="primary" size="sm" onClick={() => addCodeFromResponse()}>Looks right — schedule it</Button>
+                  <Button variant="secondary" size="sm" onClick={() => { setResponse(null); }}>Let me rephrase</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Case 4: success (no conflict, high confidence, or after confirm) */}
+        {(confirmed || (!conflict?.detected && confidence >= 0.7)) && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-[#16a34a] mt-0.5"><Icon name="check" className="w-5 h-5" strokeWidth={2.5}/></div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-emerald-900">
+                  {confirmed ? "Access scheduled" : "Ready to schedule"}
+                </div>
+                <div className="text-sm text-emerald-900 mt-1">
+                  {confirmed
+                    ? `Code synced to ${parsed.lock_name}. ${parsed.who} will have access ${parsed.recurring ? parsed.recurrence_description : "during the window above"}.`
+                    : `No conflicts found. I'll push this code to ${parsed.lock_name} when you confirm.`
+                  }
+                </div>
+                {!confirmed && (
+                  <div className="flex gap-2 mt-3">
+                    <Button variant="success" size="sm" onClick={() => addCodeFromResponse()} icon="check">Confirm & sync</Button>
+                    <Button variant="secondary" size="sm" onClick={() => setResponse(null)}>Edit</Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const examples = [
+    "Give the cleaning crew access every Saturday from 11am to 2pm in June",
+    "Maria checks into Downtown Loft June 6 from 10am to 5pm",
+    "HVAC tech needs the cabin tomorrow 9am-noon",
+  ];
+
+  return (
+    <div className="space-y-6" data-screen-label="03 Schedule Access">
+      <div>
+        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Schedule Access</h1>
+        <p className="text-sm text-slate-600 mt-1">Describe who needs access in plain language. I'll handle the rest — parsing, conflict checks, and syncing the code to the lock.</p>
+      </div>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs uppercase tracking-wider font-semibold text-slate-500">Property</label>
+        </div>
+        <select
+          value={selectedLockId}
+          onChange={(e) => setSelectedLockId(e.target.value)}
+          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 mb-4 bg-white"
+        >
+          <option value="">Auto-detect from request</option>
+          {properties.map((p) => (
+            <option key={p.id} value={p.id}>{p.name} — {p.lockName}</option>
+          ))}
+        </select>
+
+        <label className="text-xs uppercase tracking-wider font-semibold text-slate-500">Your request</label>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit(); }}
+          rows={3}
+          placeholder="e.g., Give the cleaning crew access from 11am to 2pm every Saturday in June"
+          className="w-full mt-1.5 border border-slate-300 rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e] resize-none"
+        />
+
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <span className="text-xs text-slate-500">Try:</span>
+          {examples.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => setInput(ex)}
+              className="text-xs px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-xs text-slate-400">⌘+Enter to submit · powered by Claude</div>
+          <Button variant="primary" onClick={submit} disabled={loading || !input.trim()} icon={loading ? null : "spark"}>
+            {loading ? "Parsing…" : "Schedule"}
+          </Button>
+        </div>
+      </Card>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>
+      )}
+
+      {renderResponse()}
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Access code log</h2>
+          <div className="text-xs text-slate-400">{accessCodes.length} codes</div>
+        </div>
+        <Card className="overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <tr>
+                <th className="text-left font-semibold px-4 py-3">Name</th>
+                <th className="text-left font-semibold px-4 py-3">Type</th>
+                <th className="text-left font-semibold px-4 py-3">Lock</th>
+                <th className="text-left font-semibold px-4 py-3">Window</th>
+                <th className="text-left font-semibold px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accessCodes.slice().reverse().map((c) => (
+                <tr key={c.id} className="border-t border-slate-100">
+                  <td className="px-4 py-3 text-slate-900 font-medium">{c.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{c.type}</td>
+                  <td className="px-4 py-3 text-slate-600">{c.lockName}</td>
+                  <td className="px-4 py-3 text-slate-600">{c.window || `${c.validFrom} – ${c.validUntil}`}</td>
+                  <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+window.Scheduling = Scheduling;
+
+
+// ===== property-detail.jsx =====
+// Property Detail screen — battery chart, access codes, check-in history.
+
+const BatteryChart = ({ history, currentTone }) => {
+  const W = 600, H = 160, P = 28;
+  const max = 100;
+  const xStep = (W - P * 2) / (history.length - 1);
+  const points = history.map((v, i) => [P + i * xStep, H - P - ((v / max) * (H - P * 2))]);
+  const pathD = points.map((pt, i) => `${i === 0 ? "M" : "L"} ${pt[0]} ${pt[1]}`).join(" ");
+  const areaD = `${pathD} L ${points[points.length - 1][0]} ${H - P} L ${points[0][0]} ${H - P} Z`;
+
+  const accent = currentTone === "bad" ? "#dc2626" : currentTone === "warn" ? "#d97706" : "#16a34a";
+  const fillId = `bf-${accent.replace("#","")}`;
+  const days = ["6d", "5d", "4d", "3d", "2d", "1d", "Today"];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40">
+      <defs>
+        <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={accent} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={accent} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0, 25, 50, 75, 100].map((y) => (
+        <g key={y}>
+          <line
+            x1={P} x2={W - P}
+            y1={H - P - (y / max) * (H - P * 2)}
+            y2={H - P - (y / max) * (H - P * 2)}
+            stroke="#e2e8f0" strokeDasharray="2 4"
+          />
+          <text x={P - 6} y={H - P - (y / max) * (H - P * 2) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{y}</text>
+        </g>
+      ))}
+      <path d={areaD} fill={`url(#${fillId})`} />
+      <path d={pathD} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+      {points.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r={i === points.length - 1 ? 4 : 2.5} fill="#fff" stroke={accent} strokeWidth="2" />
+          <text x={x} y={H - P + 14} textAnchor="middle" fontSize="9" fill="#94a3b8">{days[i]}</text>
+        </g>
+      ))}
+      <text
+        x={points[points.length - 1][0] - 6}
+        y={points[points.length - 1][1] - 10}
+        textAnchor="end"
+        fontSize="11"
+        fontWeight="600"
+        fill={accent}
+      >
+        {history[history.length - 1]}%
+      </text>
+    </svg>
+  );
+};
+
+const LockDetails = ({ property, codes, history, onBack, onAddAccess, settings, alertCopyCache }) => {
+  const p = property;
+  const propCodes = codes.filter(c => c.lockId === p.id);
+  const healthChecks = (window.HEALTH_CHECK_HISTORY && window.HEALTH_CHECK_HISTORY[p.id]) || [];
+  const aiResult = alertCopyCache?.[p.id]; // may be undefined if user never visited Action screen
+  const [showDev, setShowDev] = React.useState(false);
+
+  const toneColor = (t) => t === "bad" ? "text-[#dc2626]" : t === "warn" ? "text-[#d97706]" : "text-[#16a34a]";
+
+  return (
+    <div className="space-y-6" data-screen-label="03 Lock Details">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
+        <Icon name="arrow-left" className="w-4 h-4"/> Back to dashboard
+      </button>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs text-slate-500 uppercase tracking-wide">{p.lockModel}</div>
+          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight mt-0.5">{p.name}</h1>
+          <div className="text-sm text-slate-600 mt-0.5 flex items-center gap-1.5">
+            <Icon name="pin" className="w-3.5 h-3.5" /> {p.address}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={p.status} size="lg" />
+          <Button variant="primary" icon="plus" onClick={() => onAddAccess(p.id)}>Add Access Code</Button>
+        </div>
+      </div>
+
+      {/* Lock Health */}
+      <div>
+        <h3 className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Lock Health</h3>
+        <div className="grid grid-cols-3 gap-3">
+          <SignalDetail
+            icon="battery"
+            label="Battery"
+            value={`${p.battery}%`}
+            sublabel={p.battery < 20 ? "Replace within 24 hours" : p.battery < 40 ? "Monitor closely" : "Healthy range"}
+            tone={batteryTone(p.battery)}
+          />
+          <SignalDetail
+            icon={p.connectivity === "Online" ? "wifi" : "wifi-off"}
+            label="Connectivity"
+            value={p.connectivity}
+            sublabel={p.connectivity === "Online" ? "Strong signal · last seen 2 min ago" : "Last seen 6 hours ago"}
+            tone={connTone(p.connectivity)}
+          />
+          <SignalDetail
+            icon="sync"
+            label="Code Sync"
+            value={p.codeSync}
+            sublabel={p.codeSync === "Synced" ? "Last sync 4 min ago" : "Code awaiting push"}
+            tone={syncTone(p.codeSync)}
+          />
+        </div>
+      </div>
+
+      {/* 7-day battery chart */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Battery — last 7 days</h3>
+            <div className="text-xs text-slate-500">Tracking trend so you can replace batteries before they fail.</div>
+          </div>
+        </div>
+        <BatteryChart history={history} currentTone={batteryTone(p.battery)} />
+      </Card>
+
+      {/* Recent health checks */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Recent health checks</h3>
+            <div className="text-xs text-slate-500">Background pings every 4 hours. Last {healthChecks.length} shown.</div>
+          </div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-400">Automated</div>
+        </div>
+        {healthChecks.length === 0 ? (
+          <div className="px-5 py-8 text-sm text-slate-500 text-center">No checks logged yet.</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <tr>
+                <th className="text-left font-semibold px-5 py-3">Timestamp</th>
+                <th className="text-left font-semibold px-5 py-3">Outcome</th>
+                <th className="text-left font-semibold px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {healthChecks.map((h, i) => (
+                <tr key={i} className="border-t border-slate-100">
+                  <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{h.ts}</td>
+                  <td className={`px-5 py-3 ${toneColor(h.tone)} font-medium`}>{h.outcome}</td>
+                  <td className="px-5 py-3 text-right">
+                    <Icon name={h.tone === "good" ? "check" : "alert"} className={`w-4 h-4 inline ${toneColor(h.tone)}`} strokeWidth={2.5}/>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      {/* Recent check-ins */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900">Recent check-ins</h3>
+          <div className="text-xs text-slate-500">Last 5 guest arrivals at this property</div>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+            <tr>
+              <th className="text-left font-semibold px-5 py-3">Guest</th>
+              <th className="text-left font-semibold px-5 py-3">Date</th>
+              <th className="text-left font-semibold px-5 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(window.CHECKIN_HISTORY[p.id] || []).map((h, i) => (
+              <tr key={i} className="border-t border-slate-100">
+                <td className="px-5 py-3 text-slate-900 font-medium">{h.guest}</td>
+                <td className="px-5 py-3 text-slate-600">{h.date}</td>
+                <td className="px-5 py-3"><StatusBadge status={h.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {/* Active access codes */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Active access codes</h3>
+            <div className="text-xs text-slate-500">{propCodes.length} codes assigned to this lock</div>
+          </div>
+          <Button variant="secondary" size="sm" icon="plus" onClick={() => onAddAccess(p.id)}>Add</Button>
+        </div>
+        {propCodes.length === 0 ? (
+          <div className="px-5 py-8 text-sm text-slate-500 text-center">No codes yet. Click <strong>Add</strong> to schedule access.</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <tr>
+                <th className="text-left font-semibold px-5 py-3">Name</th>
+                <th className="text-left font-semibold px-5 py-3">Type</th>
+                <th className="text-left font-semibold px-5 py-3">Valid From</th>
+                <th className="text-left font-semibold px-5 py-3">Valid Until</th>
+                <th className="text-left font-semibold px-5 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {propCodes.map((c) => (
+                <tr key={c.id} className="border-t border-slate-100">
+                  <td className="px-5 py-3 text-slate-900 font-medium">{c.name}</td>
+                  <td className="px-5 py-3 text-slate-600">{c.type}</td>
+                  <td className="px-5 py-3 text-slate-600">{c.validFrom}</td>
+                  <td className="px-5 py-3 text-slate-600">{c.validUntil}</td>
+                  <td className="px-5 py-3"><StatusBadge status={c.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      {/* Developer mode panel — only when Settings → Developer mode is ON */}
+      {settings?.developerMode && (
+        <div className="rounded-lg border border-slate-300 border-dashed bg-slate-50">
+          <button
+            onClick={() => setShowDev(!showDev)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-100 rounded-lg"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 bg-slate-200 rounded px-1.5 py-0.5">Dev</span>
+              <span className="text-sm font-semibold text-slate-800">Alert copy: channels + validation</span>
+              {aiResult
+                ? <span className="text-xs text-slate-500">
+                    {Object.values(aiResult.validation?.checks || {}).filter(c=>c.pass).length}/{Object.keys(aiResult.validation?.checks || {}).length} checks passed · source: {aiResult.source}
+                  </span>
+                : <span className="text-xs text-slate-500">Open the Action screen first to generate copy</span>
+              }
+            </div>
+            <span className="text-slate-400 text-sm">{showDev ? "Hide" : "Show"}</span>
+          </button>
+          {showDev && aiResult && (
+            <div className="px-4 pb-4 space-y-5 text-xs">
+              {/* Channel previews */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-2">Channel previews</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* SMS */}
+                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                    <div className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-slate-700">SMS</div>
+                      <div className="text-[10px] text-slate-400">{aiResult.copy.sms.body.length}/160</div>
+                    </div>
+                    <div className="p-3">
+                      <div className="rounded-2xl rounded-bl-sm bg-slate-100 text-sm text-slate-900 px-3 py-2 leading-relaxed">
+                        {aiResult.copy.sms.body}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1.5">Schlage · just now</div>
+                    </div>
+                  </div>
+                  {/* Push */}
+                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                    <div className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-slate-700">Push</div>
+                      <div className="text-[10px] text-slate-400">{aiResult.copy.push.title.length}/50 · {aiResult.copy.push.body.length}/120</div>
+                    </div>
+                    <div className="p-3">
+                      <div className="rounded-xl bg-white border border-slate-200 shadow-sm px-3 py-2.5">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wide">
+                          <div className="w-3 h-3 rounded-sm bg-[#1a1a2e]"></div>
+                          Schlage · now
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 mt-1">{aiResult.copy.push.title}</div>
+                        <div className="text-xs text-slate-700 mt-0.5">{aiResult.copy.push.body}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* In-App */}
+                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                    <div className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-slate-700">In-App</div>
+                      <div className="text-[10px] text-slate-400">{aiResult.copy.in_app.headline.length}/80 · {aiResult.copy.in_app.body.length}/280</div>
+                    </div>
+                    <div className="p-3">
+                      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <div className="text-sm font-semibold text-slate-900">{aiResult.copy.in_app.headline}</div>
+                        <div className="text-xs text-slate-700 mt-1 leading-relaxed">{aiResult.copy.in_app.body}</div>
+                        <div className="mt-2 inline-block text-[11px] font-medium text-white bg-[#1a1a2e] rounded px-2 py-1">{aiResult.copy.in_app.primary_cta}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation checks (8) */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-2">Validation</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {Object.entries(aiResult.validation.checks).map(([k, v]) => (
+                    <div key={k} className={`rounded border px-3 py-2 flex items-start gap-2 ${v.pass ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+                      <span className={`mt-0.5 ${v.pass ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                        <Icon name={v.pass ? "check" : "x"} className="w-3.5 h-3.5" strokeWidth={2.5}/>
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-800">{v.label || k}</div>
+                        <div className="text-slate-600 mt-0.5 break-words">{v.detail}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Character counts */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-2">Character counts</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {[
+                    ["sms.body", aiResult.copy.sms.body.length, 160],
+                    ["push.title", aiResult.copy.push.title.length, 50],
+                    ["push.body", aiResult.copy.push.body.length, 120],
+                    ["in_app.headline", aiResult.copy.in_app.headline.length, 80],
+                    ["in_app.body", aiResult.copy.in_app.body.length, 280],
+                    ["in_app.primary_cta", aiResult.copy.in_app.primary_cta.length, 30],
+                  ].map(([name, len, max]) => {
+                    const pct = Math.min(100, (len / max) * 100);
+                    const over = len > max;
+                    return (
+                      <div key={name} className="rounded border border-slate-200 bg-white px-3 py-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-mono text-slate-700">{name}</span>
+                          <span className={over ? "text-[#dc2626] font-semibold" : "text-slate-500"}>{len}/{max}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-slate-100 mt-1.5 overflow-hidden">
+                          <div className={over ? "bg-[#dc2626]" : pct > 90 ? "bg-[#d97706]" : "bg-[#16a34a]"} style={{ width: `${pct}%`, height: "100%" }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Raw JSON */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-2">Raw JSON output</div>
+                <pre className="rounded border border-slate-200 bg-[#1a1a2e] text-slate-100 p-3 overflow-x-auto text-[11px] leading-relaxed font-mono">
+{JSON.stringify(aiResult.raw || aiResult.copy, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+window.LockDetails = LockDetails;
+
+
+// ===== other-screens.jsx =====
+// Properties list (nav item) — compact alternative view of all properties.
+
+const PropertiesList = ({ properties, onView }) => (
+  <div className="space-y-6" data-screen-label="05 Properties">
+    <div>
+      <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Properties</h1>
+      <p className="text-sm text-slate-600 mt-1">All locks across all properties.</p>
+    </div>
+    <Card className="overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <tr>
+            <th className="text-left font-semibold px-5 py-3">Property</th>
+            <th className="text-left font-semibold px-5 py-3">Lock</th>
+            <th className="text-left font-semibold px-5 py-3">Battery</th>
+            <th className="text-left font-semibold px-5 py-3">Connectivity</th>
+            <th className="text-left font-semibold px-5 py-3">Sync</th>
+            <th className="text-left font-semibold px-5 py-3">Status</th>
+            <th className="text-left font-semibold px-5 py-3">Next Check-in</th>
+            <th className="px-5 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {properties.map((p) => (
+            <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50/50">
+              <td className="px-5 py-3">
+                <div className="font-medium text-slate-900">{p.name}</div>
+                <div className="text-xs text-slate-500">{p.address}</div>
+              </td>
+              <td className="px-5 py-3 text-slate-700">{p.lockName}</td>
+              <td className={`px-5 py-3 font-medium ${
+                batteryTone(p.battery) === "bad" ? "text-[#dc2626]" : batteryTone(p.battery) === "warn" ? "text-[#d97706]" : "text-[#16a34a]"
+              }`}>{p.battery}%</td>
+              <td className={`px-5 py-3 ${p.connectivity === "Online" ? "text-[#16a34a]" : "text-[#dc2626]"}`}>{p.connectivity}</td>
+              <td className={`px-5 py-3 ${p.codeSync === "Synced" ? "text-[#16a34a]" : "text-[#d97706]"}`}>{p.codeSync}</td>
+              <td className="px-5 py-3"><StatusBadge status={p.status} /></td>
+              <td className="px-5 py-3 text-slate-600 text-xs">
+                <div className="font-medium text-slate-700">{p.nextCheckIn.guest}</div>
+                <div>{p.nextCheckIn.label}</div>
+              </td>
+              <td className="px-5 py-3 text-right">
+                <Button variant="secondary" size="sm" onClick={() => onView(p.id)}>View</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  </div>
+);
+
+const Settings = ({ settings, onSettingsChange }) => {
+  const channels = settings?.channels || { sms: false, push: true, in_app: false };
+  const updateChannel = (k, v) => onSettingsChange({ ...settings, channels: { ...channels, [k]: v } });
+  const toggleDev = (v) => onSettingsChange({ ...settings, developerMode: v });
+
+  const channelRows = [
+    { key: "sms",    label: "SMS",    sub: "Text message to the number on file. Max 160 characters." },
+    { key: "push",   label: "Push",   sub: "Mobile push notification. Best for time-sensitive alerts." },
+    { key: "in_app", label: "In-App", sub: "Banner on the dashboard plus full detail on the Action screen." },
+  ];
+
+  return (
+    <div className="space-y-6 max-w-3xl" data-screen-label="06 Settings">
+      <div>
+        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Settings</h1>
+        <p className="text-sm text-slate-600 mt-1">Notifications and developer options.</p>
+      </div>
+
+      <Card className="p-6">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Alert channels</h2>
+          <p className="text-sm text-slate-500 mt-1">Pick one or more channels for lock-health alerts. We default to Push.</p>
+        </div>
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+          {channelRows.map((row) => {
+            const on = !!channels[row.key];
+            return (
+              <button
+                key={row.key}
+                onClick={() => updateChannel(row.key, !on)}
+                role="checkbox"
+                aria-checked={on}
+                className={`text-left rounded-lg border p-4 transition ${
+                  on ? "border-[#1a1a2e] bg-[#1a1a2e]/[0.04] ring-1 ring-[#1a1a2e]/30" : "border-slate-200 bg-white hover:border-slate-400"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-slate-900">{row.label}</div>
+                  <div className={`w-5 h-5 rounded grid place-items-center border-2 transition ${
+                    on ? "bg-[#1a1a2e] border-[#1a1a2e] text-white" : "border-slate-300 text-transparent"
+                  }`}>
+                    <Icon name="check" className="w-3.5 h-3.5" strokeWidth={3}/>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 mt-1.5 leading-snug">{row.sub}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-xs text-slate-500 mt-3">
+          {Object.entries(channels).filter(([, v]) => v).length === 0
+            ? <span className="text-[#d97706] font-medium">At least one channel must be enabled.</span>
+            : <>Sending to: <span className="font-medium text-slate-700">{Object.entries(channels).filter(([, v]) => v).map(([k]) => k.replace("_", "-").toUpperCase()).join(" · ")}</span></>}
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="text-base font-semibold text-slate-900">Developer mode</h2>
+        <p className="text-sm text-slate-500 mt-1">For eval demos. Reveals the channel previews, validation checks, character counts, and raw AI JSON on the Lock Details screen.</p>
+        <div className="mt-5 flex items-center justify-between py-3 border-t border-slate-100">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Show developer panel</div>
+            <div className="text-xs text-slate-500 mt-0.5">Off by default. Turn on for the AI evaluation demo.</div>
+          </div>
+          <button
+            onClick={() => toggleDev(!settings?.developerMode)}
+            role="switch"
+            aria-checked={!!settings?.developerMode}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${settings?.developerMode ? "bg-[#1a1a2e]" : "bg-slate-300"}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${settings?.developerMode ? "translate-x-5" : "translate-x-0.5"}`}></span>
+          </button>
+        </div>
+      </Card>
+
+      <Card className="p-6 opacity-70">
+        <h2 className="text-base font-semibold text-slate-900">Account</h2>
+        <p className="text-sm text-slate-500 mt-1">Profile, billing, and integrations — coming soon.</p>
+      </Card>
+    </div>
+  );
+};
+
+Object.assign(window, { PropertiesList, Settings });
+
+
+// ===== app.jsx =====
+// Main App — state, navigation, glue.
+
+const { useState, useEffect } = React;
+
+const App = () => {
+  const [properties, setProperties] = useState(window.INITIAL_PROPERTIES);
+  const [accessCodes, setAccessCodes] = useState(window.INITIAL_ACCESS_CODES);
+  const [screen, setScreen] = useState("dashboard"); // dashboard, alert, schedule, properties, property, settings
+  const [selectedId, setSelectedId] = useState(null);
+  const [schedulePrefillLock, setSchedulePrefillLock] = useState(null);
+  const [settings, setSettings] = useState({
+    channels: { sms: false, push: true, in_app: false },
+    developerMode: false,
+  });
+  const [alertCopyCache, setAlertCopyCache] = useState({});
+  const handleCacheAlertCopy = (id, result) => setAlertCopyCache((prev) => ({ ...prev, [id]: result }));
+
+  const hostName = "Jess Reyes";
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  const handleNavigate = (id) => {
+    if (id === "schedule") { setSchedulePrefillLock(null); }
+    setScreen(id);
+  };
+
+  const handleView = (propId) => {
+    setSelectedId(propId);
+    setScreen("lockDetails");
+  };
+
+  const handleResolve = (propId) => {
+    setSelectedId(propId);
+    setScreen("action");
+  };
+
+  const handleRefreshFromAction = (propId) => {
+    // refresh_code: lock state changes -> All Clear, alert cleared.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "All Clear",
+        codeSync: "Synced",
+        battery: p.battery < 20 ? 18 : p.battery,
+        alert: null,
+        pendingAction: null,
+      };
+    }));
+  };
+
+  const handleActionTaken = (propId, actionKey) => {
+    // Non-refresh action: lock state hasn't actually changed yet.
+    // Move card to "Action Pending" so the host can see something's in flight.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "Action Pending",
+        alert: null, // clear the at-risk banner; we know the host is on it
+        pendingAction: { key: actionKey, takenAt: Date.now() },
+        scheduledAction: null,
+        snooze: null,
+      };
+    }));
+  };
+
+  const handleScheduleAction = (propId, actionKey, dueAt) => {
+    // Host committed to doing the action by a specific time.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "Action Scheduled",
+        alert: null,
+        scheduledAction: { key: actionKey, dueAt },
+        pendingAction: null,
+        snooze: null,
+      };
+    }));
+  };
+
+  const handleSnooze = (propId, until) => {
+    // Host wants a nudge later; underlying At Risk / Offline state preserved.
+    setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, snooze: { until } } : p));
+  };
+
+  const handleMarkComplete = (propId) => {
+    // Action Scheduled -> All Clear. Treats the scheduled work as done.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "All Clear",
+        codeSync: "Synced",
+        battery: p.battery < 20 ? 80 : p.battery, // assume battery swap brought it up
+        alert: null,
+        scheduledAction: null,
+        pendingAction: null,
+        snooze: null,
+      };
+    }));
+  };
+
+  const handleResolveNow = (propId) => {
+    // Snoozed -> drop snooze and route to the Action screen.
+    setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, snooze: null } : p));
+    setSelectedId(propId);
+    setScreen("action");
+  };
+
+  const handleMarkResolved = (propId) => {
+    // Host confirms the underlying issue is fixed -> back to monitoring.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "All Clear",
+        codeSync: "Synced",
+        alert: null,
+        pendingAction: null,
+      };
+    }));
+  };
+
+  const handleRefreshOnCard = (propId) => {
+    // Inline refresh from dashboard card.
+    setProperties((prev) => prev.map((p) => {
+      if (p.id !== propId) return p;
+      return {
+        ...p,
+        status: "All Clear",
+        codeSync: "Synced",
+        battery: p.battery < 20 ? 18 : p.battery,
+        alert: null,
+        pendingAction: null,
+      };
+    }));
+  };
+
+  const handleAddCode = (code) => {
+    setAccessCodes((prev) => [...prev, code]);
+  };
+
+  const handleAddAccess = (propId) => {
+    setSchedulePrefillLock(propId);
+    setScreen("schedule");
+  };
+
+  const currentProperty = properties.find((p) => p.id === selectedId);
+
+  let body = null;
+  if (screen === "dashboard") {
+    body = (
+      <Dashboard
+        properties={properties}
+        hostName={hostName}
+        today={today}
+        onView={handleView}
+        onResolve={handleResolve}
+        onRefreshOnCard={handleRefreshOnCard}
+        onMarkResolved={handleMarkResolved}
+        onMarkComplete={handleMarkComplete}
+        onResolveNow={handleResolveNow}
+        onSchedule={() => setScreen("schedule")}
+      />
+    );
+  } else if (screen === "action" && currentProperty) {
+    body = (
+      <ActionScreen
+        property={currentProperty}
+        onBack={() => setScreen("dashboard")}
+        onRefreshCode={handleRefreshFromAction}
+        onActionTaken={handleActionTaken}
+        onScheduleAction={handleScheduleAction}
+        onSnooze={handleSnooze}
+        onViewLockDetails={handleView}
+        alertCopyCache={alertCopyCache}
+        onCacheAlertCopy={handleCacheAlertCopy}
+      />
+    );
+  } else if (screen === "schedule") {
+    body = (
+      <Scheduling
+        properties={properties}
+        accessCodes={accessCodes}
+        onAddCode={handleAddCode}
+        prefillLockId={schedulePrefillLock}
+        onClearPrefill={() => setSchedulePrefillLock(null)}
+      />
+    );
+  } else if (screen === "properties") {
+    body = <PropertiesList properties={properties} onView={handleView} />;
+  } else if (screen === "lockDetails" && currentProperty) {
+    body = (
+      <LockDetails
+        property={currentProperty}
+        codes={accessCodes}
+        history={window.BATTERY_HISTORY[currentProperty.id]}
+        onBack={() => setScreen("dashboard")}
+        onAddAccess={handleAddAccess}
+        settings={settings}
+        alertCopyCache={alertCopyCache}
+      />
+    );
+  } else if (screen === "settings") {
+    body = <Settings settings={settings} onSettingsChange={setSettings} />;
+  } else {
+    body = <Dashboard properties={properties} hostName={hostName} today={today} onView={handleView} onResolve={handleResolve} onRefreshOnCard={handleRefreshOnCard} onMarkResolved={handleMarkResolved} onMarkComplete={handleMarkComplete} onResolveNow={handleResolveNow} onSchedule={() => setScreen("schedule")} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <TopNav active={screen} onNavigate={handleNavigate} hostName={hostName} />
+      <main className="max-w-[1200px] mx-auto px-8 py-8">
+        {body}
+      </main>
+      <footer className="max-w-[1200px] mx-auto px-8 pb-10 pt-2 text-xs text-slate-400">
+        Schlage AI Access Concierge · prototype · MGMT 275
+      </footer>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+
+  </script>
+</body>
+</html>
