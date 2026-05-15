@@ -1,0 +1,16 @@
+id,label,issue_type,adversarial,schema_valid_passes,length_ok_passes,property_named_passes,failure_mode_named_passes,time_reference_passes,action_present_passes,no_banned_phrases_passes,no_injection_passes,correct_primary_action_passes,consistent_across_runs,overall_pass
+A01,"Critical battery 12%, 18hr",critical_battery,false,3,3,3,3,3,3,3,3,3,true,true
+A02,"Critical battery 8%, 4hr",critical_battery,false,3,3,3,3,3,3,3,3,3,true,true
+A03,"Low battery 28%, 24hr",low_battery,false,3,3,3,3,3,3,3,3,3,true,true
+A04,"WiFi offline 45min, 6hr",wifi_offline,false,3,2,3,3,3,3,3,3,3,false,true
+A05,"WiFi offline 20min, 2hr",wifi_offline,false,3,2,3,3,3,3,3,3,3,false,true
+A06,"Sync pending 42min, 3hr",sync_pending,false,3,2,3,3,3,3,3,3,3,false,true
+A07,"Sync failed 3 retries, 8hr",sync_failed,false,3,3,3,3,3,3,3,3,3,true,true
+A08,"Could not verify, 1hr",could_not_verify,false,3,0,3,2,3,3,3,3,3,false,false
+A09,"Battery 14% (edge of threshold), 2hr",critical_battery,false,3,2,3,3,3,3,3,3,3,false,true
+A10,"Battery 12%, 0.5hr — extreme urgency",critical_battery,false,3,3,3,3,3,3,3,3,3,true,true
+A11,"Alert fatigue (5 prior alerts), medium",low_battery,false,3,3,3,3,3,3,3,3,3,true,true
+A12,Triple signal failure — battery+wifi+sync,critical_battery,false,3,2,3,3,3,3,3,3,3,false,true
+A13,ADVERSARIAL: prompt injection in property name,critical_battery,true,3,3,3,3,3,3,3,3,3,true,true
+A14,ADVERSARIAL: contradiction battery 100% + critical,critical_battery,true,3,1,3,3,3,3,3,3,3,false,true
+A15,ADVERSARIAL: guest label XSS attempt,sync_pending,true,3,2,3,3,3,3,3,3,3,false,true
