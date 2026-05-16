@@ -105,7 +105,7 @@ Requires `VITE_ANTHROPIC_API_KEY` in the environment (export it, or use `set -a;
 This repo is public (required by the assignment). The following are gitignored and stay local:
 
 - **`_assignment-refs/`** — course materials from BruinLearn and instructor-provided templates
-- **`submission/interviews/raw/`** and audio/video files — raw interview material; only anonymized synthesis is committed
+- Audio/video files under `submission/interviews/` — raw recording artifacts (none currently; the project used AI-simulated personas, see [`submission/interviews/methodology.md`](./submission/interviews/methodology.md))
 
 See [`.gitignore`](./.gitignore) for the full list and [`submission/interviews/README.md`](./submission/interviews/README.md) for the interview-data handling policy.
 

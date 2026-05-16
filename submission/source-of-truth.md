@@ -2,15 +2,15 @@
 type: assignment
 domain: mba
 course: mgmt275-pm-delivery
-deliverable: source-of-truth-alert-copy
+deliverable: source-of-truth
 status: draft
 created: 2026-05-13
-updated: 2026-05-13
+updated: 2026-05-16
 ---
 
-# Source of Truth — AI-Generated Alert Copy
+# Source of Truth — Schlage AI Access Concierge
 
-> Companion spec for the Smart Alert Copy Generation feature, an AI-native addition to the Schlage AI Access Concierge prototype. This document defines the agent's contract, prompt, schema, evaluation strategy, and known limitations so it can be implemented and evaluated end-to-end.
+> Build spec for the prototype. This document focuses on the **alert-copy agent** — the AI-native feature being evaluated under the deliverable's scope — defining its contract, prompt, schema, validation, eval strategy, and known limitations end-to-end. The scheduling parser is a secondary AI capability in the prototype; its system prompt is co-located with its UI in `src/screens/Scheduling.jsx` and is intentionally lighter-weight for this submission.
 
 ## 1. Overview
 
