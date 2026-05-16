@@ -9,15 +9,15 @@ const NAV_ITEMS = [
 
 export default function TopNav({ active, onNavigate, hostName }) {
   return (
-    <nav className="bg-[#1a1a2e] text-white">
+    <nav className="bg-[var(--schlage-blue)] text-white">
       <div className="max-w-[1200px] mx-auto px-8 h-16 flex items-center justify-between">
         <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-md bg-[#B81F2D] grid place-items-center">
-            <Icon name="lock" className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-md bg-[var(--schlage-white)] grid place-items-center">
+            <Icon name="lock" className="w-5 h-5 text-[var(--schlage-blue)]" />
           </div>
           <div className="text-left leading-tight">
             <div
-              className="text-[15px] font-bold uppercase tracking-[0.08em] text-[#B81F2D]"
+              className="text-[15px] font-bold uppercase tracking-[0.08em] text-[var(--schlage-white)]"
               style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
             >
               SCHLAGE

@@ -267,7 +267,7 @@ export default function ActionScreen({
         className={`w-full rounded-lg px-6 py-5 text-white font-semibold text-base transition flex items-center justify-center gap-2.5 ${
           refreshState === 'running'
             ? 'bg-slate-400 cursor-wait'
-            : 'bg-[#1a1a2e] hover:bg-[#2a2a44] shadow-[0_4px_12px_rgba(15,23,42,0.18)] disabled:opacity-60 disabled:cursor-wait'
+            : 'bg-[#0072BC] hover:bg-[#005A9D] shadow-[0_4px_12px_rgba(15,23,42,0.18)] disabled:opacity-60 disabled:cursor-wait'
         }`}
       >
         <Icon name={primaryDef.icon} className={`w-5 h-5 ${refreshState === 'running' && primaryKey === 'refresh_code' ? 'animate-spin' : ''}`} strokeWidth={2.5} />
@@ -361,7 +361,7 @@ export default function ActionScreen({
         {cohostStep === 'schedule' && (
           <>
             <p className="text-sm text-slate-700 mb-3">When should we send the SMS to Diego?</p>
-            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]" />
+            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC]" />
             <p className="text-xs text-slate-500 mt-2">Default is 4 hours before {p.nextCheckIn.guest} checks in.</p>
           </>
         )}
@@ -383,7 +383,7 @@ export default function ActionScreen({
         {cohostStep === 'customSnooze' && (
           <>
             <p className="text-sm text-slate-700 mb-3">Remind me at:</p>
-            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]" />
+            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC]" />
           </>
         )}
       </Modal>
@@ -466,7 +466,7 @@ export default function ActionScreen({
         {batteryStep === 'schedule' && (
           <>
             <p className="text-sm text-slate-700 mb-3">By when will the batteries be replaced?</p>
-            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]" />
+            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC]" />
             <p className="text-xs text-slate-500 mt-2">Default is 4 hours before {p.nextCheckIn.guest} checks in.</p>
           </>
         )}
@@ -488,7 +488,7 @@ export default function ActionScreen({
         {batteryStep === 'customSnooze' && (
           <>
             <p className="text-sm text-slate-700 mb-3">Remind me at:</p>
-            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]" />
+            <input type="datetime-local" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC]" />
           </>
         )}
       </Modal>

@@ -265,7 +265,7 @@ export default function Scheduling({ properties, accessCodes, onAddCode, prefill
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }}
           rows={3}
           placeholder="e.g., Give the cleaning crew access from 11am to 2pm every Saturday in June"
-          className="w-full mt-1.5 border border-slate-300 rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e] resize-none"
+          className="w-full mt-1.5 border border-slate-300 rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC] resize-none"
         />
 
         <div className="flex flex-wrap items-center gap-2 mt-3">
