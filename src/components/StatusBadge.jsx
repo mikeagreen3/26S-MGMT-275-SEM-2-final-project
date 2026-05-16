@@ -17,7 +17,7 @@ export default function StatusBadge({ status, size = 'md' }) {
   const pad = size === 'lg' ? 'px-3 py-1 text-xs' : 'px-2.5 py-0.5 text-[11px]'
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-semibold uppercase tracking-wide text-white ${pad}`}
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold uppercase tracking-wide text-white whitespace-nowrap ${pad}`}
       style={{ backgroundColor: s.bg, letterSpacing: '0.04em' }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.dot }} />
