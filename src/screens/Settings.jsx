@@ -34,13 +34,13 @@ export default function Settings({ settings, onSettingsChange }) {
                 role="checkbox"
                 aria-checked={on}
                 className={`text-left rounded-lg border p-4 transition ${
-                  on ? 'border-[#1a1a2e] bg-[#1a1a2e]/[0.04] ring-1 ring-[#1a1a2e]/30' : 'border-slate-200 bg-white hover:border-slate-400'
+                  on ? 'border-[#0072BC] bg-[#0072BC]/[0.08] ring-1 ring-[#0072BC]/20' : 'border-slate-200 bg-white hover:border-slate-400'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-slate-900">{row.label}</div>
                   <div className={`w-5 h-5 rounded grid place-items-center border-2 transition ${
-                    on ? 'bg-[#1a1a2e] border-[#1a1a2e] text-white' : 'border-slate-300 text-transparent'
+                    on ? 'bg-[#0072BC] border-[#0072BC] text-white' : 'border-slate-300 text-transparent'
                   }`}>
                     <Icon name="check" className="w-3.5 h-3.5" strokeWidth={3} />
                   </div>
@@ -69,7 +69,7 @@ export default function Settings({ settings, onSettingsChange }) {
             onClick={() => toggleDev(!settings?.developerMode)}
             role="switch"
             aria-checked={!!settings?.developerMode}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${settings?.developerMode ? 'bg-[#1a1a2e]' : 'bg-slate-300'}`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${settings?.developerMode ? 'bg-[#0072BC]' : 'bg-slate-300'}`}
           >
             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${settings?.developerMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </button>

@@ -1,5 +1,57 @@
+<<<<<<< HEAD
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Logs
+*.log
+
+# Course materials kept locally for reference, NOT for public republishing
+# (assignment instructions extracted from BruinLearn, Amazon PR-FAQ templates
+# distributed in-class, etc.)
+_assignment-refs/
+
+# Interview audio (synthetic-persona transcripts are committed under interviews/raw/)
+interviews/recordings/
+interviews/*.mp3
+interviews/*.mp4
+interviews/*.m4a
+interviews/*.wav
+=======
 node_modules/
 dist/
 .env
 *.local
 .vercel
+>>>>>>> 530fa936ab3c383da280d5f0ceb615db8ff318c4

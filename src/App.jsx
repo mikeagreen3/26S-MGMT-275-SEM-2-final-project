@@ -184,7 +184,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-white">
       <TopNav active={screen} onNavigate={handleNavigate} hostName={HOST_NAME} />
       <main className="max-w-[1200px] mx-auto px-8 py-8">
         {renderScreen()}

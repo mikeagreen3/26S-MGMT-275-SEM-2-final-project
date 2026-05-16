@@ -2,8 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --schlage-blue: #0072BC;
+  --schlage-navy: #003767;
+  --schlage-black: #000000;
+  --schlage-dark: #1C1C1C;
+  --schlage-white: #FFFFFF;
+  --schlage-light-gray: #F5F5F5;
+  --schlage-border: #ECEFF1;
+
+  --font-body: "Avenir Book", "Avenir", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-heading: "Stag Web", Georgia, "Times New Roman", serif;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--schlage-white);
+  color: var(--schlage-black);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--schlage-black);
+  line-height: 1.2;
+}
+
+.card, .section-muted {
+  background: var(--schlage-light-gray);
+  border-radius: 8px;
+}
+
+.btn-primary {
+  background: var(--schlage-blue);
+  color: var(--schlage-white);
+  border: 1px solid var(--schlage-blue);
+  border-radius: 41px;
+  padding: 12px 24px;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--schlage-white);
+  color: var(--schlage-blue);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--schlage-blue);
+  border: 1px solid var(--schlage-blue);
+  border-radius: 41px;
+  padding: 12px 24px;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--schlage-blue);
+  color: var(--schlage-white);
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
