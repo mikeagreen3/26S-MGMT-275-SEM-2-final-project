@@ -10,13 +10,13 @@ updated: 2026-05-13
 
 # UX & Eval Appendix — Schlage AI Access Concierge
 
-> Companion to `prfaq.md` and `source-of-truth.md`. The Interview Synthesis section reflects 10 AI-simulated user interviews conducted on 2026-05-13. The Eval Set Results section will be populated after the 200-prompt eval run defined in `_drafts/eval-writeup.md` is executed. Per assignment spec: 4 page min, 10 page max.
+> Companion to `prfaq.md` and `source-of-truth.md`. The Interview Synthesis section reflects 10 AI-simulated user interviews conducted on 2026-05-13. The Eval Set Results section will be populated after the 200-prompt eval run defined in `../appendix-working-notes/eval-writeup.md` is executed. Per assignment spec: 4 page min, 10 page max.
 
 ## Interview Synthesis
 
 ### Method
 
-Group 3 ran **10 AI-simulated user interviews** against synthetic STR-host personas, in lieu of recruiting live hosts. The methodology was approved by the TA on 2026-05-11 (see `_assignment-refs/faculty-correspondence.md`). Full pipeline documented in [`interviews/methodology.md`](./interviews/methodology.md). Summary:
+Group 3 ran **10 AI-simulated user interviews** against synthetic STR-host personas, in lieu of recruiting live hosts. The methodology was approved by the TA on 2026-05-11 (see `../_assignment-refs/faculty-correspondence.md`). Full pipeline documented in [`interviews/methodology.md`](./interviews/methodology.md). Summary:
 
 1. A 25–30 source corpus (Reddit threads from r/airbnb_hosts and r/vrbohosts, STR operations blogs, Schlage and competitor product reviews, Allegion 10-K) was loaded into NotebookLM as the grounding layer.
 2. NotebookLM generated 10 distinct personas with source-pinned quotes ([`interviews/personas/`](./interviews/personas/)). Personas vary along five axes: property count (1 / 2–4 / 5+), pain dominance (hardware failure / code management / both / refusal), tech savviness (low / medium / high), lock brand (Schlage Encode, Schlage Connect, August, Yale + August Connect, Kwikset Halo, Kwikset SmartCode 270 offline), and operating model (solo / cleaners / PMS-automated / churned).
@@ -217,7 +217,7 @@ The interview findings produce a short list of concrete v1 decisions:
 
 ## Eval Set Results
 
-*Pending execution. Targets and structure defined in `_drafts/eval-writeup.md` §1.1. The Interview Synthesis above recommends a stricter false-positive readiness threshold (<0.5%) than the current general copy-faithfulness target.*
+*Pending execution. Targets and structure defined in `../appendix-working-notes/eval-writeup.md` §1.1. The Interview Synthesis above recommends a stricter false-positive readiness threshold (<0.5%) than the current general copy-faithfulness target.*
 
 ### Metrics Table
 
@@ -262,4 +262,4 @@ The interview findings produce a short list of concrete v1 decisions:
 
 ---
 
-*AI usage disclosure: User interviews in this appendix are AI-simulated against synthetic personas grounded in a public source corpus, per the methodology approved by the TA on 2026-05-11. Full methodology, source corpus, persona profiles, and raw transcripts are committed in [`interviews/`](./interviews/). Cross-cutting findings in §Interview Synthesis were synthesized by Claude with human review. The eval set design and prototype implementation are documented separately in `_drafts/eval-writeup.md` and `_drafts/experiment-writeup.md`.*
+*AI usage disclosure: User interviews in this appendix are AI-simulated against synthetic personas grounded in a public source corpus, per the methodology approved by the TA on 2026-05-11. Full methodology, source corpus, persona profiles, and raw transcripts are committed in [`interviews/`](./interviews/). Cross-cutting findings in §Interview Synthesis were synthesized by Claude with human review. The eval set design and prototype implementation are documented separately in `../appendix-working-notes/eval-writeup.md` and `../appendix-working-notes/experiment-writeup.md`.*

@@ -8,22 +8,28 @@ A software layer on top of Schlage's existing connected lock lineup that gives s
 
 ---
 
-## Deliverables
+## For the TA — reading order
 
-| # | Deliverable | File |
+All graded materials live in [`submission/`](./submission/) and [`eval/`](./eval/). Recommended reading order:
+
+| # | Deliverable | Where |
 |---|---|---|
-| 1 | Working Prototype | `src/` (see "Running the prototype" below) |
-| 2 | Source of Truth (refined spec, system prompts, data schemas) | [`source-of-truth.md`](./source-of-truth.md) |
-| 3 | Narrative & PR-FAQ (4-6 pages) | [`prfaq.md`](./prfaq.md) |
-| 4 | UX & Eval Appendix (interviews + eval results) | [`ux-eval-appendix.md`](./ux-eval-appendix.md) |
+| 1 | Narrative & PR-FAQ (start here) | [`submission/prfaq.md`](./submission/prfaq.md) |
+| 2 | Source of Truth — refined spec, system prompts, data schemas | [`submission/source-of-truth.md`](./submission/source-of-truth.md) |
+| 3 | UX & Eval Appendix — interview synthesis + eval results | [`submission/ux-eval-appendix.md`](./submission/ux-eval-appendix.md) |
+| 4 | Interview corpus — methodology, 10 personas, per-persona syntheses | [`submission/interviews/`](./submission/interviews/) |
+| 5 | Eval harness, eval set, and result CSVs | [`eval/`](./eval/) |
+| 6 | Working prototype | [`src/`](./src/) — run instructions below |
 
-## Supporting material
+## Repo map
 
-- [`interviews/`](./interviews/) — user interview notes (8-12 total for the team)
-- [`evals/`](./evals/) — eval set (200 prompts) + metric results summary
-- [`eval.js`](./eval.js) — runnable eval harness for the alert-copy and scheduling agents
-- [`assets/`](./assets/) — screenshots, diagrams
-- [`_drafts/`](./_drafts/) — prior coursework that seeds the final deliverables (product brief, strategy case, experiment writeup, eval writeup, research brief)
+- [`submission/`](./submission/) — graded deliverables (prfaq, source-of-truth, ux-eval-appendix, interviews)
+- [`eval/`](./eval/) — eval harness (`eval.js`), eval set (`eval-set.jsonl`), results summary, and result CSVs
+- [`src/`](./src/) — Vite + React 18 + Tailwind prototype
+- [`assets/`](./assets/) — screenshots and diagrams referenced by deliverables and the app
+- [`appendix-working-notes/`](./appendix-working-notes/) — coursework drafts (product brief, strategy case, RICE, experiment / eval write-ups, prfaq v1 archive) that seed the final deliverables. Cited for provenance; **not graded as standalone artifacts**.
+- [`appendix-research-corpus/`](./appendix-research-corpus/) — source PDFs (Reddit threads, app store reviews, support forums) used to ground the synthetic personas in `submission/interviews/personas/`. Included for methodology audit.
+- [`chats/`](./chats/) — original HTML mockups from the design handoff. Reference only; the live prototype is in `src/`.
 
 ---
 
@@ -81,7 +87,16 @@ Enable **Developer Mode** in Settings to reveal on the Lock Details screen the c
 - [Anthropic Messages API](https://docs.anthropic.com/en/api/messages) (direct browser access)
 - Model: `claude-haiku-4-5`
 
-_Design source files are in `chats/` — original HTML prototypes from the design handoff._
+---
+
+## Running the eval harness
+
+```bash
+cd eval
+node eval.js
+```
+
+Requires `VITE_ANTHROPIC_API_KEY` in the environment (export it, or use `set -a; source ../.env; set +a`). Hits the real Anthropic API (~105 calls, ~$0.42). Overwrites [`eval/eval-results-alert.csv`](./eval/eval-results-alert.csv) and [`eval/eval-results-scheduling.csv`](./eval/eval-results-scheduling.csv) with the latest run.
 
 ---
 
@@ -90,9 +105,9 @@ _Design source files are in `chats/` — original HTML prototypes from the desig
 This repo is public (required by the assignment). The following are gitignored and stay local:
 
 - **`_assignment-refs/`** — course materials from BruinLearn and instructor-provided templates
-- **`interviews/raw/`** and audio/video files — raw interview material with PII; only anonymized synthesis is committed
+- **`submission/interviews/raw/`** and audio/video files — raw interview material; only anonymized synthesis is committed
 
-See [`.gitignore`](./.gitignore) for the full list and [`interviews/README.md`](./interviews/README.md) for the interview-data handling policy.
+See [`.gitignore`](./.gitignore) for the full list and [`submission/interviews/README.md`](./submission/interviews/README.md) for the interview-data handling policy.
 
 ---
 

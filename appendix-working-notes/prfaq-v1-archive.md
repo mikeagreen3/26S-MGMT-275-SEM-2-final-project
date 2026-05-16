@@ -7,12 +7,12 @@ version: v1
 status: superseded
 created: 2026-05-10
 updated: 2026-05-10
-superseded_by: ../prfaq.md (v2)
+superseded_by: ../submission/prfaq.md (v2)
 ---
 
 # PR-FAQ v1 — Archive
 
-> Original v1 press release draft by Jessicya Materano via Claude, 2026-05-10. Superseded by v2 in `../prfaq.md`. Kept for provenance and to make the rewrite diffable for the team / for graders evaluating revision discipline.
+> Original v1 press release draft by Jessicya Materano via Claude, 2026-05-10. Superseded by v2 in `../submission/prfaq.md`. Kept for provenance and to make the rewrite diffable for the team / for graders evaluating revision discipline.
 
 ## v1 Press Release (as submitted by Jess)
 

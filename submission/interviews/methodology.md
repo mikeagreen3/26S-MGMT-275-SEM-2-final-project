@@ -14,7 +14,7 @@ updated: 2026-05-13
 
 ## Overview
 
-Group 3 conducted **10 AI-simulated user interviews** with synthetic STR-host personas, in lieu of recruiting live hosts. The methodology was explicitly approved by the TA on 2026-05-11 (`_assignment-refs/faculty-correspondence.md` Inbound v1): "you can get creative with how you build user understanding: synthesize insights from online discussions, content from target users, or construct informed personas based on publicly available user discourse." Live interviews were not required.
+Group 3 conducted **10 AI-simulated user interviews** with synthetic STR-host personas, in lieu of recruiting live hosts. The methodology was explicitly approved by the TA on 2026-05-11 (`../../_assignment-refs/faculty-correspondence.md` Inbound v1): "you can get creative with how you build user understanding: synthesize insights from online discussions, content from target users, or construct informed personas based on publicly available user discourse." Live interviews were not required.
 
 The pipeline has four stages:
 
@@ -171,4 +171,4 @@ These are documented as next-step research, not as gaps in this submission.
 | `raw/host-{a-j}-transcript.md` | Full simulated interview transcripts (gitignored) |
 | `host-{a-j}-*.md` | Anonymized per-persona synthesis (committed) |
 | `../ux-eval-appendix.md` | Cross-cutting findings + Method section (pulls from this file) |
-| `../_assignment-refs/faculty-correspondence.md` | TA approval of the methodology |
+| `../../_assignment-refs/faculty-correspondence.md` | TA approval of the methodology |

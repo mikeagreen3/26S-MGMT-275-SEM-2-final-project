@@ -20,7 +20,7 @@ updated: 2026-05-10
 
 ## Tier 1 — Reddit threads (primary user-voice data, 12 sources)
 
-Already extracted and cited in `_drafts/q1-reddit-host-pain-points-findings.md`. Treated as raw user research, not as PR-FAQ citations (per syllabus policy).
+Already extracted and cited in `../../appendix-working-notes/q1-reddit-host-pain-points-findings.md`. Treated as raw user research, not as PR-FAQ citations (per syllabus policy).
 
 | # | Subreddit | URL | Pain coverage |
 |---|---|---|---|

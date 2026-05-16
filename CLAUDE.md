@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Schlage AI Access Concierge — a Vite + React 18 + Tailwind v3 single-page prototype for a smart lock management dashboard aimed at short-term rental hosts. It is the prototype deliverable for an MBA course final project; the surrounding repo also contains deliverable docs (`prfaq.md`, `source-of-truth.md`, `ux-eval-appendix.md`), user interview notes, and an eval harness.
+Schlage AI Access Concierge — a Vite + React 18 + Tailwind v3 single-page prototype for a smart lock management dashboard aimed at short-term rental hosts. It is the prototype deliverable for an MBA course final project; the surrounding repo also contains the graded deliverables under `submission/` (`submission/prfaq.md`, `submission/source-of-truth.md`, `submission/ux-eval-appendix.md`, `submission/interviews/`), an eval harness under `eval/`, and working-notes appendices.
 
 ## Commands
 
@@ -15,18 +15,18 @@ npm run dev              # vite dev server at http://localhost:5173
 npm run build            # vite build → dist/
 npm run preview          # serve the built bundle
 
-node eval.js             # run the offline eval (alert copy + scheduling), writes eval-results-*.csv
+cd eval && node eval.js  # run the offline eval (alert copy + scheduling), writes eval-results-*.csv into eval/
 ```
 
 There is **no test runner, no linter, and no typechecker** configured. Don't claim "tests pass" — there are none. For UI changes, run `npm run dev` and verify in a browser.
 
-`eval.js` reads `VITE_ANTHROPIC_API_KEY` from the environment (not `.env`); source it or export it before running. It hits the real Anthropic API (~105 calls, ~$0.42).
+`eval/eval.js` reads `VITE_ANTHROPIC_API_KEY` from the environment (not `.env`); source it or export it before running. It hits the real Anthropic API (~105 calls, ~$0.42).
 
 ## Architecture
 
-### Active code lives in `src/`. Ignore `prototype/`.
+### Active code lives in `src/`.
 
-`prototype/README.md` is an unrelated stub from the assignment scaffold and is not wired into the build. The `index.html` at the repo root loads `src/main.jsx` — that is the app.
+The `index.html` at the repo root loads `src/main.jsx` — that is the app.
 
 ### State and routing
 
@@ -63,5 +63,6 @@ Two AI capabilities, with different patterns:
 
 ## Repo housekeeping notes
 
-- `_assignment-refs/` and `interviews/raw/` are gitignored on purpose (course material + PII). Don't add files there expecting them to be committed.
-- The non-code deliverables (`prfaq.md`, `source-of-truth.md`, `ux-eval-appendix.md`, `interviews/`, `evals/`) are the academic submission and are mostly independent from the React app — changes to the app don't require updating them unless explicitly asked.
+- `_assignment-refs/` and `submission/interviews/raw/` are gitignored on purpose (course material + PII). Don't add files there expecting them to be committed.
+- The non-code deliverables under `submission/` (`prfaq.md`, `source-of-truth.md`, `ux-eval-appendix.md`, `interviews/`) plus the eval artifacts under `eval/` are the academic submission and are mostly independent from the React app — changes to the app don't require updating them unless explicitly asked.
+- `appendix-working-notes/` (formerly `_drafts/`) and `appendix-research-corpus/` (formerly `interview-data/`) hold provenance for the deliverables and are visible but not graded as standalone artifacts.

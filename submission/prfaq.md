@@ -10,11 +10,11 @@ updated: 2026-05-10
 
 # Narrative & PR-FAQ — Schlage AI Access Concierge
 
-> Status: draft. **5-6 page MAX, single-spaced** (PR portion: 1.5 page MAX). Builds on `_drafts/product-strategy.md` Part A and `_drafts/product-brief.md`. Customize the [provided Google Doc template](https://docs.google.com/document/d/1oGNbXDbxbm87sUe-0yn1YQLv-YLmp5T0z3ucZELniKo/edit) for final submission format.
+> Status: draft. **5-6 page MAX, single-spaced** (PR portion: 1.5 page MAX). Builds on `../appendix-working-notes/product-strategy.md` Part A and `../appendix-working-notes/product-brief.md`. Customize the [provided Google Doc template](https://docs.google.com/document/d/1oGNbXDbxbm87sUe-0yn1YQLv-YLmp5T0z3ucZELniKo/edit) for final submission format.
 
 ## Press Release
 
-> **Provenance:** v2 rewritten by Michael, 2026-05-10, building on Jess's v1. Changes from v1 archived in `_drafts/prfaq-v1-archive.md`. Hero framing follows the RICE recommendation in `_drafts/rice-prioritization.md` (combined access reliability layer, workflow first, alert as payoff).
+> **Provenance:** v2 rewritten by Michael, 2026-05-10, building on Jess's v1. Changes from v1 archived in `../appendix-working-notes/prfaq-v1-archive.md`. Hero framing follows the RICE recommendation in `../appendix-working-notes/rice-prioritization.md` (combined access reliability layer, workflow first, alert as payoff).
 
 ### Schlage Launches AI Access Concierge, an Operating Layer for Short-Term Rental Hosts
 
@@ -34,7 +34,7 @@ AI Access Concierge is available today inside the Schlage Home app for all Schla
 
 ### Resolved decisions (closed v2 open questions)
 
-1. **Hero feature:** workflow story leads, pre-arrival check is the payoff. Justified by RICE (`_drafts/rice-prioritization.md`).
+1. **Hero feature:** workflow story leads, pre-arrival check is the payoff. Justified by RICE (`../appendix-working-notes/rice-prioritization.md`).
 2. **Booking sync mentioned** as job 1 of 4, given its highest-leverage status in the product brief.
 3. **Audience tension:** PR commits fully to the host story. The host segment is small but operationally distinct; mixing the broader base would weaken positioning. The non-host majority is not harmed (features stay opt-in inside the app).
 4. **Market size:** "More than 2 million short-term rental hosts in the United States." Conservative US-only number, defensible against Airbnb 10-K data. Strategy doc's 5M+ is the global figure, not used in the PR.

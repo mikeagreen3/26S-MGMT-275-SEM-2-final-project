@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # OS
 .DS_Store
 Thumbs.db
@@ -12,6 +11,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+*.local
 *.pem
 *.key
 
@@ -24,6 +24,7 @@ yarn-error.log*
 out/
 dist/
 build/
+.vercel
 
 # Python
 __pycache__/
@@ -42,16 +43,9 @@ venv/
 # distributed in-class, etc.)
 _assignment-refs/
 
-# Interview audio (synthetic-persona transcripts are committed under interviews/raw/)
-interviews/recordings/
-interviews/*.mp3
-interviews/*.mp4
-interviews/*.m4a
-interviews/*.wav
-=======
-node_modules/
-dist/
-.env
-*.local
-.vercel
->>>>>>> 530fa936ab3c383da280d5f0ceb615db8ff318c4
+# Interview audio (synthetic-persona transcripts are committed under submission/interviews/raw/)
+submission/interviews/recordings/
+submission/interviews/*.mp3
+submission/interviews/*.mp4
+submission/interviews/*.m4a
+submission/interviews/*.wav
