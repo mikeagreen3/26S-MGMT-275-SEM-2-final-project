@@ -5,7 +5,17 @@ export default {
     './src/**/*.{js,jsx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%':      { opacity: '0.25' },
+        },
+      },
+      animation: {
+        'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+      },
+    },
   },
   plugins: [],
 }
