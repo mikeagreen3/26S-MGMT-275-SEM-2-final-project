@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # OS
 .DS_Store
 Thumbs.db
@@ -47,3 +48,10 @@ interviews/*.mp3
 interviews/*.mp4
 interviews/*.m4a
 interviews/*.wav
+=======
+node_modules/
+dist/
+.env
+*.local
+.vercel
+>>>>>>> 530fa936ab3c383da280d5f0ceb615db8ff318c4

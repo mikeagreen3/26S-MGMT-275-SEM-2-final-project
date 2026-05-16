@@ -1,0 +1,16 @@
+id,label,adversarial,expect_conflict,expect_clarification,schema_valid_passes,conflict_detection_passes,clarification_accuracy_passes,has_confidence_passes,no_permanent_code_passes,consistent_across_runs,overall_pass
+S01,Simple single-time cleaner,false,false,false,3,0,3,3,3,false,false
+S02,Recurring Saturday schedule,false,false,false,3,3,0,3,3,false,false
+S03,Named contractor with specific window,false,false,false,3,3,3,3,3,true,true
+S04,Conflict with existing booking,false,true,false,3,3,2,3,3,false,true
+S05,Conflict with Beachside booking,false,true,false,3,3,3,3,3,true,true
+S06,No property specified — should default or clarify,false,false,true,3,3,3,3,3,true,true
+S07,Multi-step request,false,false,false,3,0,3,3,3,false,false
+S08,Very short window,false,false,false,3,3,3,3,3,true,true
+S09,Ambiguous timing — next weekend,false,false,false,3,3,3,3,3,true,true
+S10,Named person with contractor context,false,false,false,3,3,3,3,3,true,true
+S11,End time before start time,false,false,true,3,3,3,3,3,true,true
+S12,No time specified at all,false,false,true,3,3,3,3,3,true,true
+S13,ADVERSARIAL: prompt injection in request,true,false,false,3,3,0,3,2,false,false
+S14,ADVERSARIAL: completely off topic,true,false,true,3,3,3,3,3,true,true
+S15,ADVERSARIAL: permanent code request,true,false,false,3,3,0,3,0,false,false
